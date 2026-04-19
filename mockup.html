@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EV Parking — Home Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #D8DADF; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+    .charge-bar {
+      background: #1A1D23;
+      transition: width 0.6s ease;
+    }
+
+    /* Frosted glass layers */
+    .glass {
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(255,255,255,0.85);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+    .glass-inner {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    /* Card aliases (maps to glass) */
+    .card {
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(255,255,255,0.85);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.95);
+    }
+    .card-inner {
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    /* Header bg */
+    .header-bg {
+      background: linear-gradient(160deg, #EAECF0 0%, #DDE0E6 100%);
+    }
+
+    /* Station full-screen sheet */
+    #stationSheet {
+      transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    #stationSheet.sheet-collapsed { transform: translateY(100%); }
+    #stationSheet.sheet-expanded  { transform: translateY(0%); }
+
+    /* Occupy modal */
+    .occupy-modal {
+      transition: opacity 0.2s ease, transform 0.25s ease;
+    }
+    .occupy-modal.hidden-modal {
+      opacity: 0; pointer-events: none; transform: scale(0.95);
+    }
+    .occupy-modal.visible-modal {
+      opacity: 1; pointer-events: all; transform: scale(1);
+    }
+
+    /* Available pulse — green */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1;   box-shadow: 0 0 6px rgba(34,197,94,0.8); }
+      50%       { opacity: 0.5; box-shadow: 0 0 0px rgba(34,197,94,0); }
+    }
+    .pulse { animation: pulse-dot 2s ease-in-out infinite; }
+
+    .spot-row { cursor: default; }
+
+    .toggle-chevron { transition: transform 0.35s ease; }
+    .toggle-chevron.rotated { transform: rotate(180deg); }
+
+    /* Overtime card pulse */
+    @keyframes border-pulse-orange {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(234,88,12,0.2), 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.95); }
+      50%       { box-shadow: 0 0 10px 2px rgba(234,88,12,0.1), 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.95); }
+    }
+    .overtime-card { animation: border-pulse-orange 2.2s ease-in-out infinite; }
+
+    .ot-overlay { transition: opacity 0.2s ease, transform 0.2s ease; }
+    .ot-overlay.ot-hidden  { opacity: 0; pointer-events: none; transform: scale(0.97); }
+    .ot-overlay.ot-visible { opacity: 1; pointer-events: all;  transform: scale(1); }
+
+    .free-panel { transition: opacity 0.2s ease, transform 0.25s ease; }
+    .free-panel.fp-hidden  { opacity: 0; pointer-events: none; transform: scale(0.96) translateY(6px); }
+    .free-panel.fp-visible { opacity: 1; pointer-events: all;  transform: scale(1) translateY(0); }
+  </style>
+</head>
+<body class="flex justify-center items-start" style="height:100dvh">
+
+  <!-- Ambient light blobs -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden" style="z-index:0">
+    <div style="position:absolute;top:-80px;left:-60px;width:380px;height:380px;border-radius:50%;background:rgba(255,255,255,0.35);filter:blur(60px)"></div>
+    <div style="position:absolute;bottom:60px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(200,205,215,0.4);filter:blur(70px)"></div>
+  </div>
+
+  <div class="relative w-full max-w-[390px] flex flex-col overflow-hidden shadow-2xl" style="background:linear-gradient(160deg,#E8EAEE 0%,#D8DADF 100%);height:100dvh;z-index:1">
+
+    <!-- ══════════════════════════════
+         HEADER
+    ══════════════════════════════ -->
+    <div class="relative h-44 flex-shrink-0 overflow-hidden">
+      <div class="absolute inset-0 header-bg"></div>
+      <!-- Soft light bloom -->
+      <div class="absolute inset-0" style="background:radial-gradient(ellipse 70% 60% at 50% -10%,rgba(255,255,255,0.6) 0%,transparent 70%)"></div>
+
+      <div class="relative z-10 flex items-center justify-between px-4 pt-5">
+        <!-- Logo -->
+        <div class="w-11 h-11 rounded-full flex items-center justify-center" style="background:#1A1D23;box-shadow:0 2px 12px rgba(26,29,35,0.25);padding:2px">
+          <div class="w-full h-full rounded-full flex items-center justify-center" style="background:#2D3139">
+            <svg class="w-5 h-5" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="text-center">
+          <p class="text-xs tracking-widest uppercase" style="color:#9098A8">Welcome back</p>
+          <p class="font-bold text-base tracking-wide" style="color:#1A1D23">Aaron</p>
+        </div>
+        <button class="flex items-center gap-1.5 border text-xs font-medium px-3 py-1.5 rounded-full transition-colors glass-inner"
+          style="color:#6B7280"
+          onmouseover="this.style.color='#DC2626'"
+          onmouseout="this.style.color='#6B7280'">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+          </svg>
+          Logout
+        </button>
+      </div>
+
+      <div class="relative z-10 px-4 mt-4">
+        <p class="text-xs tracking-widest uppercase font-medium" style="color:#9CA3AF">EV Parking Management</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="w-2 h-2 rounded-full pulse" style="background:#22C55E"></span>
+          <span class="text-xs font-semibold" style="color:#16A34A">Live tracking active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         MAIN CONTENT
+    ══════════════════════════════ -->
+    <div class="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-20" style="gap:12px">
+
+      <!-- ── MY STATS CARD ── -->
+      <div class="flex-shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold text-sm tracking-widest uppercase" style="color:#1A1D23">My Stats</h2>
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full glass-inner" style="color:#1A1D23">Active</span>
+        </div>
+
+        <div class="card rounded-2xl p-3">
+          <!-- Spot header row -->
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg flex items-center justify-center glass-inner">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="#1A1D23" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-sm" style="color:#1A1D23">Spot #1</p>
+                <p class="text-[10px]" style="color:#9CA3AF">Station A · Level 2</p>
+              </div>
+            </div>
+            <button class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors active:scale-95"
+              style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.22);color:#DC2626">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"/>
+              </svg>
+              Stop
+            </button>
+          </div>
+
+          <!-- Time row -->
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <div class="card-inner rounded-xl p-2 text-center">
+              <p class="text-[10px] uppercase tracking-wide mb-0.5" style="color:#9CA3AF">Start</p>
+              <p class="font-semibold text-xs" style="color:#1A1D23">8:00 AM</p>
+            </div>
+            <div class="card-inner rounded-xl p-2 text-center">
+              <p class="text-[10px] uppercase tracking-wide mb-0.5" style="color:#9CA3AF">Stop</p>
+              <p class="font-semibold text-xs" style="color:#1A1D23">12:00 PM</p>
+            </div>
+            <div class="card-inner rounded-xl p-2 text-center">
+              <p class="text-[10px] uppercase tracking-wide mb-0.5" style="color:#9CA3AF">Remain</p>
+              <p class="font-semibold text-xs" style="color:#1A1D23">4 hr</p>
+            </div>
+          </div>
+
+          <!-- Consumption + Charge % -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="card-inner rounded-xl p-2 flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner">
+                <svg class="w-3 h-3" fill="none" stroke="#1A1D23" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wide" style="color:#9CA3AF">Consumption</p>
+                <p class="font-semibold text-xs" style="color:#1A1D23">3 kWh</p>
+              </div>
+            </div>
+            <div class="card-inner rounded-xl p-2">
+              <div class="flex items-center justify-between mb-1">
+                <p class="text-[10px] uppercase tracking-wide" style="color:#9CA3AF">Charge %</p>
+                <span class="font-bold text-xs" style="color:#1A1D23">74%</span>
+              </div>
+              <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(0,0,0,0.07)">
+                <div class="charge-bar h-full rounded-full" style="width:74%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CHARGING STATIONS CARD ── -->
+      <div class="flex-1 flex flex-col min-h-0">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold text-sm tracking-widest uppercase" style="color:#1A1D23">Charging Stations</h2>
+        </div>
+
+        <div class="flex-1 flex flex-col min-h-0 rounded-2xl overflow-hidden card">
+
+          <!-- View all button -->
+          <button onclick="openSheet()"
+            class="w-full flex items-center justify-between px-4 py-3 transition-colors"
+            style="border-bottom:1px solid rgba(255,255,255,0.5)"
+            onmouseover="this.style.background='rgba(0,0,0,0.03)'"
+            onmouseout="this.style.background='transparent'">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded flex items-center justify-center glass-inner">
+                <svg class="w-3 h-3" fill="none" stroke="#1A1D23" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <span class="text-xs font-semibold" style="color:#1A1D23">View all spots</span>
+            </div>
+            <svg class="w-4 h-4" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+            </svg>
+          </button>
+
+          <!-- Stat chips -->
+          <div class="grid grid-cols-3 gap-2 p-4 pb-3">
+            <div class="rounded-xl p-2.5 text-center" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.22)">
+              <p class="font-bold text-lg leading-none" style="color:#16A34A">4</p>
+              <p class="text-[10px] mt-1 font-medium" style="color:rgba(22,163,74,0.65)">Available</p>
+            </div>
+            <div class="rounded-xl p-2.5 text-center" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.18)">
+              <p class="font-bold text-lg leading-none" style="color:#DC2626">6</p>
+              <p class="text-[10px] mt-1 font-medium" style="color:rgba(220,38,38,0.55)">In Use</p>
+            </div>
+            <button onclick="toggleFreePanel()" class="rounded-xl p-2.5 text-center active:scale-95 transition-all glass-inner">
+              <p class="font-bold text-lg leading-none" style="color:#1A1D23">11m</p>
+              <p class="text-[10px] mt-1 font-medium" style="color:#9CA3AF">Earliest Free ↑</p>
+            </button>
+          </div>
+
+          <!-- Spot cards -->
+          <div class="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
+
+            <!-- Spot 1 — Available -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.7)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #1</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span>
+                    <span class="text-[10px] font-semibold" style="color:#16A34A">Available</span>
+                  </div>
+                  <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+                  <button onclick="openOccupy(1)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 3 — Available -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.7)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #3</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span>
+                    <span class="text-[10px] font-semibold" style="color:#16A34A">Available</span>
+                  </div>
+                  <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+                  <button onclick="openOccupy(3)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 6 — Available -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.7)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #6</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span>
+                    <span class="text-[10px] font-semibold" style="color:#16A34A">Available</span>
+                  </div>
+                  <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+                  <button onclick="openOccupy(6)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 9 — Available -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.7)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #9</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span>
+                    <span class="text-[10px] font-semibold" style="color:#16A34A">Available</span>
+                  </div>
+                  <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+                  <button onclick="openOccupy(9)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 2 — OVERTIME -->
+            <div id="otCard-collapsed" class="overtime-card relative rounded-xl overflow-hidden transition-all duration-300 glass" style="border:1px solid rgba(234,88,12,0.35)">
+              <div id="otBadge-collapsed" class="absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-200">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:rgba(234,88,12,0.1);border:1px solid rgba(234,88,12,0.3);color:#EA580C">⏱ OVERTIME · 8 min past</span>
+              </div>
+              <div class="p-3 pt-8">
+                <div class="flex items-start justify-between">
+                  <div class="space-y-1 flex-1 min-w-0 pr-2">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold text-sm" style="color:#1A1D23">Spot #2</span>
+                      <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#EA580C"></span>
+                      <span class="text-[10px] font-semibold" style="color:#EA580C">Unconfirmed</span>
+                    </div>
+                    <p class="text-xs font-medium" style="color:#374151">Maria G.</p>
+                    <div class="flex gap-3">
+                      <span class="text-[11px]" style="color:#9CA3AF">Finished: <span style="color:#EA580C" class="font-medium">8 min ago</span></span>
+                      <span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">8:00 AM</span></span>
+                    </div>
+                  </div>
+                  <div class="flex flex-col gap-1.5 flex-shrink-0 opacity-25">
+                    <div class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</div>
+                    <div class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Overtime overlay -->
+              <div id="otOverlay-collapsed" class="ot-overlay ot-hidden absolute inset-0 rounded-xl" style="background:rgba(255,252,250,0.92);backdrop-filter:blur(16px);border:1px solid rgba(234,88,12,0.2)">
+                <div class="flex items-start justify-between px-4 pt-4 pb-3" style="border-bottom:1px solid rgba(234,88,12,0.12)">
+                  <div>
+                    <div class="flex items-center gap-2 mb-0.5"><span class="text-lg">⏱</span><p class="font-bold text-base" style="color:#1A1D23">Still there?</p></div>
+                    <p class="text-xs" style="color:#6B7280">Maria G. hasn't confirmed</p>
+                  </div>
+                  <button onclick="cancelOvertime('collapsed',event)" class="flex items-center gap-1 text-[10px] font-semibold px-2 py-1.5 rounded-lg ml-2" style="background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.1);color:#9CA3AF">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    They left
+                  </button>
+                </div>
+                <div class="px-4 py-3 space-y-2.5">
+                  <button id="nudgeBtn-collapsed" onclick="handleNudge('collapsed',event)"
+                    class="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all"
+                    style="background:rgba(234,88,12,0.07);border:1px solid rgba(234,88,12,0.28)">
+                    <div class="flex items-center gap-2">
+                      <span class="text-base">👋</span>
+                      <div class="text-left">
+                        <p class="text-sm font-bold" style="color:#EA580C">Nudge</p>
+                        <p class="text-[10px]" style="color:rgba(234,88,12,0.6)">Send a notification</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span id="np1-collapsed" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                      <span id="np2-collapsed" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                      <span id="np3-collapsed" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                    </div>
+                  </button>
+                  <div id="nudgeCooldown-collapsed" class="hidden px-1">
+                    <div class="flex justify-between mb-1.5">
+                      <span class="text-xs" style="color:#9CA3AF">Resets in</span>
+                      <span id="nudgeTimer-collapsed" class="text-xs font-bold" style="color:#EA580C">20:00</span>
+                    </div>
+                    <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(0,0,0,0.07)">
+                      <div id="nudgeFill-collapsed" class="h-full rounded-full" style="background:linear-gradient(90deg,#1A1D23,#EA580C);width:100%;transition:width 1s linear"></div>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button onclick="event.stopPropagation()" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm glass-inner" style="color:#374151">🔒 Reserve</button>
+                    <button onclick="openOccupy(2)" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm" style="background:#1A1D23;color:#fff">⚡ Occupy</button>
+                  </div>
+                </div>
+              </div>
+              <button onclick="toggleOvertime('collapsed')" class="absolute inset-0 w-full h-full opacity-0 z-0"></button>
+            </div>
+
+            <!-- Spot 4 — In Use -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.6)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #4</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#DC2626"></span>
+                    <span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span>
+                  </div>
+                  <p class="text-xs font-medium" style="color:#374151">James T.</p>
+                  <p class="text-[11px]" style="color:#9CA3AF">To 100%: <span class="font-medium" style="color:#1A1D23">42 min</span> · Started: <span style="color:#1A1D23" class="font-medium">9:15 AM</span></p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button>
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 5 — In Use -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.6)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #5</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#DC2626"></span>
+                    <span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span>
+                  </div>
+                  <p class="text-xs font-medium" style="color:#374151">Lisa K.</p>
+                  <p class="text-[11px]" style="color:#9CA3AF">To 100%: <span class="font-medium" style="color:#1A1D23">1h 05m</span> · Started: <span style="color:#1A1D23" class="font-medium">7:30 AM</span></p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button>
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 7 — In Use -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.6)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #7</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#DC2626"></span>
+                    <span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span>
+                  </div>
+                  <p class="text-xs font-medium" style="color:#374151">David R.</p>
+                  <p class="text-[11px]" style="color:#9CA3AF">To 100%: <span class="font-medium" style="color:#1A1D23">28 min</span> · Started: <span style="color:#1A1D23" class="font-medium">10:00 AM</span></p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button>
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 8 — In Use -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.6)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #8</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#DC2626"></span>
+                    <span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span>
+                  </div>
+                  <p class="text-xs font-medium" style="color:#374151">Sarah M.</p>
+                  <p class="text-[11px]" style="color:#9CA3AF">To 100%: <span class="font-medium" style="color:#1A1D23">11 min</span> · Started: <span style="color:#1A1D23" class="font-medium">8:45 AM</span></p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button>
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Spot 10 — In Use -->
+            <div class="spot-row rounded-xl p-3" style="background:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.6)">
+              <div class="flex items-start justify-between">
+                <div class="space-y-1 flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm" style="color:#1A1D23">Spot #10</span>
+                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#DC2626"></span>
+                    <span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span>
+                  </div>
+                  <p class="text-xs font-medium" style="color:#374151">Chris P.</p>
+                  <p class="text-[11px]" style="color:#9CA3AF">To 100%: <span class="font-medium" style="color:#1A1D23">55 min</span> · Started: <span style="color:#1A1D23" class="font-medium">9:00 AM</span></p>
+                </div>
+                <div class="flex flex-col gap-1.5 flex-shrink-0">
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button>
+                  <button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end main content -->
+
+    <!-- ══════════════════════════════
+         CHARGING STATIONS FULL-SCREEN SHEET
+    ══════════════════════════════ -->
+    <div id="stationSheet" class="sheet-collapsed absolute inset-x-0 top-0 bottom-0 z-20 flex flex-col" style="background:linear-gradient(160deg,#E8EAEE 0%,#D8DADF 100%)">
+
+      <!-- Sheet header -->
+      <div class="flex-shrink-0 glass" style="border-radius:0;border-left:none;border-right:none;border-top:none">
+        <div class="flex justify-center pt-3 pb-1">
+          <div class="w-12 h-1.5 rounded-full" style="background:rgba(0,0,0,0.15)"></div>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <div>
+            <h3 class="font-bold text-base" style="color:#1A1D23">Charging Stations</h3>
+            <p class="text-xs mt-0.5" style="color:#9CA3AF">All 10 spots</p>
+          </div>
+          <button onclick="closeSheet()" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl glass-inner" style="color:#374151">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            Collapse
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 px-4 pb-4">
+          <div class="rounded-xl p-2 text-center" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.22)">
+            <p class="font-bold text-base leading-none" style="color:#16A34A">4</p>
+            <p class="text-[10px] mt-1 font-medium" style="color:rgba(22,163,74,0.65)">Available</p>
+          </div>
+          <div class="rounded-xl p-2 text-center" style="background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.18)">
+            <p class="font-bold text-base leading-none" style="color:#DC2626">6</p>
+            <p class="text-[10px] mt-1 font-medium" style="color:rgba(220,38,38,0.55)">In Use</p>
+          </div>
+          <button onclick="toggleFreePanel()" class="rounded-xl p-2 text-center active:scale-95 glass-inner">
+            <p class="font-bold text-base leading-none" style="color:#1A1D23">11m</p>
+            <p class="text-[10px] mt-1 font-medium" style="color:#9CA3AF">Earliest Free ↑</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable spot list -->
+      <div class="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
+
+        <!-- Spot 1 -->
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm" style="color:#1A1D23">Spot #1</span>
+                <span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span>
+                <span class="text-[10px] font-semibold" style="color:#16A34A">Available</span>
+              </div>
+              <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+              <div class="flex gap-3">
+                <span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">—</span></span>
+                <span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">—</span></span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0">
+              <button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+              <button onclick="openOccupy(1)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spot 2 — OVERTIME (sheet) -->
+        <div id="otCard-sheet" class="overtime-card relative glass rounded-xl overflow-hidden transition-all duration-300" style="border:1px solid rgba(234,88,12,0.35);min-height:0">
+          <div id="otBadge-sheet" class="absolute top-2 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-200">
+            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:rgba(234,88,12,0.1);border:1px solid rgba(234,88,12,0.3);color:#EA580C">⏱ OVERTIME · 8 min past</span>
+          </div>
+          <div class="p-3 pt-8">
+            <div class="flex items-start justify-between">
+              <div class="space-y-1 flex-1 min-w-0 pr-2">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm" style="color:#1A1D23">Spot #2</span>
+                  <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:#EA580C"></span>
+                  <span class="text-[10px] font-semibold" style="color:#EA580C">Unconfirmed</span>
+                </div>
+                <p class="text-xs font-medium" style="color:#374151">Maria G.</p>
+                <div class="flex gap-3">
+                  <span class="text-[11px]" style="color:#9CA3AF">Finished: <span style="color:#EA580C" class="font-medium">8 min ago</span></span>
+                  <span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">8:00 AM</span></span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-1.5 flex-shrink-0 opacity-25">
+                <div class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</div>
+                <div class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</div>
+              </div>
+            </div>
+          </div>
+          <div id="otOverlay-sheet" class="ot-overlay ot-hidden absolute inset-0 rounded-xl" style="background:rgba(255,252,250,0.92);backdrop-filter:blur(16px);border:1px solid rgba(234,88,12,0.2)">
+            <div class="flex items-start justify-between px-4 pt-4 pb-3" style="border-bottom:1px solid rgba(234,88,12,0.12)">
+              <div>
+                <div class="flex items-center gap-2 mb-0.5"><span class="text-lg">⏱</span><p class="font-bold text-base" style="color:#1A1D23">Still there?</p></div>
+                <p class="text-xs" style="color:#6B7280">Maria G. hasn't confirmed</p>
+              </div>
+              <button onclick="cancelOvertime('sheet',event)" class="flex items-center gap-1 text-[10px] font-semibold px-2 py-1.5 rounded-lg ml-2" style="background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.1);color:#9CA3AF">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                They left
+              </button>
+            </div>
+            <div class="px-4 py-3 space-y-2.5">
+              <button id="nudgeBtn-sheet" onclick="handleNudge('sheet',event)"
+                class="w-full flex items-center justify-between px-4 py-3 rounded-xl"
+                style="background:rgba(234,88,12,0.07);border:1px solid rgba(234,88,12,0.28)">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">👋</span>
+                  <div class="text-left">
+                    <p class="text-sm font-bold" style="color:#EA580C">Nudge</p>
+                    <p class="text-[10px]" style="color:rgba(234,88,12,0.6)">Send a notification</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span id="np1-sheet" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                  <span id="np2-sheet" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                  <span id="np3-sheet" class="w-2.5 h-2.5 rounded-full" style="background:#EA580C;box-shadow:0 0 6px rgba(234,88,12,0.55)"></span>
+                </div>
+              </button>
+              <div id="nudgeCooldown-sheet" class="hidden px-1">
+                <div class="flex justify-between mb-1.5">
+                  <span class="text-xs" style="color:#9CA3AF">Resets in</span>
+                  <span id="nudgeTimer-sheet" class="text-xs font-bold" style="color:#EA580C">20:00</span>
+                </div>
+                <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(0,0,0,0.07)">
+                  <div id="nudgeFill-sheet" class="h-full rounded-full" style="background:linear-gradient(90deg,#1A1D23,#EA580C);width:100%;transition:width 1s linear"></div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="event.stopPropagation()" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm glass-inner" style="color:#374151">🔒 Reserve</button>
+                <button onclick="openOccupy(2)" class="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm" style="background:#1A1D23;color:#fff">⚡ Occupy</button>
+              </div>
+            </div>
+          </div>
+          <button onclick="toggleOvertime('sheet')" class="absolute inset-0 w-full h-full opacity-0 z-0"></button>
+        </div>
+
+        <!-- Spots 3,6,9 — Available -->
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #3</span><span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span><span class="text-[10px] font-semibold" style="color:#16A34A">Available</span></div>
+              <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button><button onclick="openOccupy(3)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #6</span><span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span><span class="text-[10px] font-semibold" style="color:#16A34A">Available</span></div>
+              <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button><button onclick="openOccupy(6)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #9</span><span class="w-2 h-2 rounded-full flex-shrink-0 pulse" style="background:#22C55E"></span><span class="text-[10px] font-semibold" style="color:#16A34A">Available</span></div>
+              <p class="text-xs" style="color:#9CA3AF">— unoccupied —</p>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button class="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style="color:#374151">Reserve</button><button onclick="openOccupy(9)" class="text-[10px] font-bold px-2.5 py-1 rounded-lg" style="background:#1A1D23;color:#fff">Occupy</button></div>
+          </div>
+        </div>
+
+        <!-- In Use spots 4,5,7,8,10 -->
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #4</span><span class="w-2 h-2 rounded-full" style="background:#DC2626"></span><span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span></div>
+              <p class="text-xs font-medium" style="color:#374151">James T.</p>
+              <div class="flex gap-3"><span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">42 min</span></span><span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">9:15 AM</span></span></div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #5</span><span class="w-2 h-2 rounded-full" style="background:#DC2626"></span><span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span></div>
+              <p class="text-xs font-medium" style="color:#374151">Lisa K.</p>
+              <div class="flex gap-3"><span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">1h 05m</span></span><span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">7:30 AM</span></span></div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #7</span><span class="w-2 h-2 rounded-full" style="background:#DC2626"></span><span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span></div>
+              <p class="text-xs font-medium" style="color:#374151">David R.</p>
+              <div class="flex gap-3"><span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">28 min</span></span><span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">10:00 AM</span></span></div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #8</span><span class="w-2 h-2 rounded-full" style="background:#DC2626"></span><span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span></div>
+              <p class="text-xs font-medium" style="color:#374151">Sarah M.</p>
+              <div class="flex gap-3"><span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">11 min</span></span><span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">8:45 AM</span></span></div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button></div>
+          </div>
+        </div>
+        <div class="spot-row glass rounded-xl p-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-1 flex-1 min-w-0 pr-2">
+              <div class="flex items-center gap-2"><span class="font-bold text-sm" style="color:#1A1D23">Spot #10</span><span class="w-2 h-2 rounded-full" style="background:#DC2626"></span><span class="text-[10px] font-semibold" style="color:#DC2626">In Use</span></div>
+              <p class="text-xs font-medium" style="color:#374151">Chris P.</p>
+              <div class="flex gap-3"><span class="text-[11px]" style="color:#9CA3AF">To 100%: <span style="color:#1A1D23" class="font-medium">55 min</span></span><span class="text-[11px]" style="color:#9CA3AF">Started: <span style="color:#1A1D23" class="font-medium">9:00 AM</span></span></div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0"><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Reserve</button><button disabled class="text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-not-allowed" style="background:rgba(0,0,0,0.05);color:#C4C4C4;border:1px solid rgba(0,0,0,0.08)">Occupy</button></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         BOTTOM NAV
+    ══════════════════════════════ -->
+    <div class="absolute bottom-0 left-0 right-0 z-10 px-4 pb-4 pt-2" style="background:linear-gradient(to top,#D8DADF 60%,transparent)">
+      <div class="glass rounded-2xl px-4 py-2.5 flex justify-around items-center">
+
+        <button class="flex flex-col items-center gap-1">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#1A1D23;box-shadow:0 4px 12px rgba(26,29,35,0.25)">
+            <svg class="w-5 h-5" fill="white" viewBox="0 0 24 24">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </div>
+          <span class="text-[10px] font-bold" style="color:#1A1D23">Home</span>
+        </button>
+
+        <button class="flex flex-col items-center gap-1 opacity-35">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="#374151" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+          </div>
+          <span class="text-[10px] font-semibold" style="color:#9CA3AF">Chat</span>
+        </button>
+
+        <button class="flex flex-col items-center gap-1 opacity-35">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="#374151" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <span class="text-[10px] font-semibold" style="color:#9CA3AF">History</span>
+        </button>
+
+        <button class="flex flex-col items-center gap-1 opacity-35">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="#374151" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <span class="text-[10px] font-semibold" style="color:#9CA3AF">Profile</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         EARLIEST FREE PANEL
+    ══════════════════════════════ -->
+    <div id="freePanelBackdrop" class="absolute inset-0 z-30 opacity-0 pointer-events-none transition-opacity duration-200" style="background:rgba(0,0,0,0.18)" onclick="toggleFreePanel()"></div>
+    <div id="freePanel" class="free-panel fp-hidden absolute left-4 right-4 z-40 rounded-2xl overflow-hidden" style="bottom:90px;background:rgba(255,255,255,0.82);backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,0.9);box-shadow:0 8px 32px rgba(0,0,0,0.12)">
+      <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid rgba(0,0,0,0.05)">
+        <div>
+          <p class="font-bold text-sm" style="color:#1A1D23">Soonest Available</p>
+          <p class="text-[10px] mt-0.5" style="color:#9CA3AF">Sorted by earliest free time</p>
+        </div>
+        <button onclick="toggleFreePanel()" class="w-7 h-7 rounded-lg flex items-center justify-center glass-inner">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="divide-y" style="border-color:rgba(0,0,0,0.05)">
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner"><span class="text-xs font-bold" style="color:#1A1D23">#8</span></div>
+            <div><p class="text-sm font-semibold" style="color:#1A1D23">Spot #8</p><div class="flex items-center gap-2 mt-0.5"><span class="text-[11px] font-bold" style="color:#1A1D23">11 min</span><span class="text-[10px]" style="color:#D1D5DB">·</span><span class="text-[11px]" style="color:#9CA3AF">Free at <span style="color:#1A1D23" class="font-medium">8:11 PM</span></span></div></div>
+          </div>
+          <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner"><span class="text-xs font-bold" style="color:#1A1D23">#2</span></div>
+            <div><p class="text-sm font-semibold" style="color:#1A1D23">Spot #2</p><div class="flex items-center gap-2 mt-0.5"><span class="text-[11px] font-bold" style="color:#1A1D23">19 min</span><span class="text-[10px]" style="color:#D1D5DB">·</span><span class="text-[11px]" style="color:#9CA3AF">Free at <span style="color:#1A1D23" class="font-medium">8:19 PM</span></span></div></div>
+          </div>
+          <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner"><span class="text-xs font-bold" style="color:#1A1D23">#7</span></div>
+            <div><p class="text-sm font-semibold" style="color:#1A1D23">Spot #7</p><div class="flex items-center gap-2 mt-0.5"><span class="text-[11px] font-bold" style="color:#1A1D23">28 min</span><span class="text-[10px]" style="color:#D1D5DB">·</span><span class="text-[11px]" style="color:#9CA3AF">Free at <span style="color:#1A1D23" class="font-medium">8:28 PM</span></span></div></div>
+          </div>
+          <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner"><span class="text-xs font-bold" style="color:#1A1D23">#4</span></div>
+            <div><p class="text-sm font-semibold" style="color:#1A1D23">Spot #4</p><div class="flex items-center gap-2 mt-0.5"><span class="text-[11px] font-bold" style="color:#1A1D23">42 min</span><span class="text-[10px]" style="color:#D1D5DB">·</span><span class="text-[11px]" style="color:#9CA3AF">Free at <span style="color:#1A1D23" class="font-medium">8:42 PM</span></span></div></div>
+          </div>
+          <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+        </div>
+        <div class="flex items-center justify-between px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 glass-inner"><span class="text-xs font-bold" style="color:#1A1D23">#10</span></div>
+            <div><p class="text-sm font-semibold" style="color:#1A1D23">Spot #10</p><div class="flex items-center gap-2 mt-0.5"><span class="text-[11px] font-bold" style="color:#1A1D23">55 min</span><span class="text-[10px]" style="color:#D1D5DB">·</span><span class="text-[11px]" style="color:#9CA3AF">Free at <span style="color:#1A1D23" class="font-medium">8:55 PM</span></span></div></div>
+          </div>
+          <button class="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner" style="color:#374151">Reserve</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         OCCUPY MODAL
+    ══════════════════════════════ -->
+    <div id="occupyBackdrop" class="absolute inset-0 z-40 opacity-0 pointer-events-none transition-opacity duration-200" style="background:rgba(0,0,0,0.28);backdrop-filter:blur(6px)" onclick="closeOccupy()"></div>
+
+    <div id="occupyModal" class="occupy-modal hidden-modal absolute left-4 right-4 z-50 rounded-2xl p-5"
+      style="background:rgba(255,255,255,0.88);backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,0.95);box-shadow:0 20px 60px rgba(0,0,0,0.18)"
+      style="top:50%;transform:translateY(-50%) scale(0.95)">
+
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="font-bold text-base" style="color:#1A1D23">Occupy Spot <span id="occupySpotNum">#1</span></h3>
+          <p class="text-xs mt-0.5" style="color:#9CA3AF">Enter your estimated charge time</p>
+        </div>
+        <button onclick="closeOccupy()" class="w-8 h-8 rounded-full flex items-center justify-center glass-inner">
+          <svg class="w-4 h-4" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex gap-3 mb-4">
+        <div class="flex-1">
+          <label class="text-xs uppercase tracking-wide block mb-1.5" style="color:#9CA3AF">Hours</label>
+          <div class="relative">
+            <input id="hoursInput" type="number" min="0" max="12" placeholder="0"
+              class="w-full outline-none font-bold text-xl text-center py-3 rounded-xl transition-colors appearance-none glass-inner" style="color:#1A1D23" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#9CA3AF">hr</span>
+          </div>
+        </div>
+        <div class="flex items-end pb-3">
+          <span class="font-bold text-xl" style="color:#9CA3AF">:</span>
+        </div>
+        <div class="flex-1">
+          <label class="text-xs uppercase tracking-wide block mb-1.5" style="color:#9CA3AF">Minutes</label>
+          <div class="relative">
+            <input id="minutesInput" type="number" min="0" max="59" placeholder="00"
+              class="w-full outline-none font-bold text-xl text-center py-3 rounded-xl transition-colors appearance-none glass-inner" style="color:#1A1D23" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#9CA3AF">min</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <p class="text-xs uppercase tracking-wide mb-2" style="color:#9CA3AF">Quick select</p>
+        <div class="grid grid-cols-4 gap-2">
+          <button onclick="setTime(0,30)" class="text-xs font-semibold py-2 rounded-xl glass-inner" style="color:#6B7280">30m</button>
+          <button onclick="setTime(1,0)"  class="text-xs font-semibold py-2 rounded-xl glass-inner" style="color:#6B7280">1 hr</button>
+          <button onclick="setTime(2,0)"  class="text-xs font-semibold py-2 rounded-xl glass-inner" style="color:#6B7280">2 hr</button>
+          <button onclick="setTime(4,0)"  class="text-xs font-semibold py-2 rounded-xl glass-inner" style="color:#6B7280">4 hr</button>
+        </div>
+      </div>
+
+      <button onclick="confirmOccupy()"
+        class="w-full active:scale-95 font-bold py-3.5 rounded-2xl text-sm text-white transition-all"
+        style="background:#1A1D23;box-shadow:0 4px 16px rgba(26,29,35,0.35)">
+        Confirm Occupy
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const sheet = document.getElementById('stationSheet');
+    function openSheet()  { sheet.classList.remove('sheet-collapsed'); sheet.classList.add('sheet-expanded'); }
+    function closeSheet() { sheet.classList.remove('sheet-expanded');  sheet.classList.add('sheet-collapsed'); }
+
+    let freePanelOpen = false;
+    function toggleFreePanel() {
+      freePanelOpen = !freePanelOpen;
+      const panel    = document.getElementById('freePanel');
+      const backdrop = document.getElementById('freePanelBackdrop');
+      const sheetOpen = sheet.classList.contains('sheet-expanded');
+      if (freePanelOpen) {
+        if (sheetOpen) { panel.style.bottom='auto'; panel.style.top='50%'; panel.style.transform='translateY(-50%)'; }
+        else { panel.style.top='auto'; panel.style.transform='none'; panel.style.bottom='90px'; }
+      } else {
+        panel.style.top='auto'; panel.style.transform='none'; panel.style.bottom='90px';
+      }
+      panel.classList.toggle('fp-hidden',  !freePanelOpen);
+      panel.classList.toggle('fp-visible', freePanelOpen);
+      backdrop.style.opacity      = freePanelOpen ? '1' : '0';
+      backdrop.style.pointerEvents= freePanelOpen ? 'all' : 'none';
+    }
+
+    const COOLDOWN_SECS = 20 * 60;
+    const nudgeState = {};
+
+    function getState(ctx) {
+      if (!nudgeState[ctx]) nudgeState[ctx] = { open: false, left: 3, interval: null };
+      return nudgeState[ctx];
+    }
+
+    function toggleOvertime(ctx) {
+      const s = getState(ctx);
+      s.open = !s.open;
+      const overlay = document.getElementById('otOverlay-' + ctx);
+      const card    = document.getElementById('otCard-' + ctx);
+      const badge   = document.getElementById('otBadge-' + ctx);
+      overlay.classList.toggle('ot-hidden',  !s.open);
+      overlay.classList.toggle('ot-visible', s.open);
+      card.style.minHeight      = s.open ? '300px' : '0px';
+      badge.style.opacity       = s.open ? '0' : '1';
+      badge.style.pointerEvents = s.open ? 'none' : 'auto';
+      const tapHint = card.querySelector('button[onclick^="toggleOvertime"]');
+      if (tapHint) tapHint.style.pointerEvents = s.open ? 'none' : 'auto';
+    }
+
+    function handleNudge(ctx, e) {
+      e.stopPropagation();
+      const s = getState(ctx);
+      if (s.left <= 0) return;
+      s.left--;
+      updatePips(ctx, s.left);
+      lockNudgeBtn(ctx);
+      document.getElementById('nudgeCooldown-' + ctx).classList.remove('hidden');
+      startCooldown(ctx, s.left > 0);
+    }
+
+    function updatePips(ctx, left) {
+      [1,2,3].forEach(i => {
+        const el = document.getElementById('np' + i + '-' + ctx);
+        if (i <= left) { el.style.background='#EA580C'; el.style.boxShadow='0 0 6px rgba(234,88,12,0.55)'; }
+        else           { el.style.background='rgba(0,0,0,0.1)'; el.style.boxShadow='none'; }
+      });
+    }
+
+    function lockNudgeBtn(ctx) {
+      const btn = document.getElementById('nudgeBtn-' + ctx);
+      btn.disabled = true;
+      btn.style.background  = 'rgba(0,0,0,0.04)';
+      btn.style.borderColor = 'rgba(0,0,0,0.08)';
+      btn.querySelector('p.text-sm').style.color       = '#D1D5DB';
+      btn.querySelector('p.text-\\[10px\\]').style.color = '#E5E7EB';
+    }
+
+    function unlockNudgeBtn(ctx) {
+      const btn = document.getElementById('nudgeBtn-' + ctx);
+      btn.disabled = false;
+      btn.style.background  = 'rgba(234,88,12,0.07)';
+      btn.style.borderColor = 'rgba(234,88,12,0.28)';
+      btn.querySelector('p.text-sm').style.color       = '#EA580C';
+      btn.querySelector('p.text-\\[10px\\]').style.color = 'rgba(234,88,12,0.6)';
+    }
+
+    function startCooldown(ctx, unlockAfter) {
+      const s = getState(ctx);
+      if (s.interval) clearInterval(s.interval);
+      const fill  = document.getElementById('nudgeFill-' + ctx);
+      const timer = document.getElementById('nudgeTimer-' + ctx);
+      fill.style.width = '100%';
+      let remaining = COOLDOWN_SECS;
+      s.interval = setInterval(() => {
+        remaining--;
+        fill.style.width = (remaining / COOLDOWN_SECS * 100) + '%';
+        const m  = String(Math.floor(remaining/60)).padStart(2,'0');
+        const sc = String(remaining%60).padStart(2,'0');
+        timer.textContent = m + ':' + sc;
+        if (remaining <= 0) {
+          clearInterval(s.interval);
+          if (unlockAfter) { unlockNudgeBtn(ctx); document.getElementById('nudgeCooldown-' + ctx).classList.add('hidden'); }
+        }
+      }, 1000);
+    }
+
+    function cancelOvertime(ctx, e) {
+      e.stopPropagation();
+      const s = getState(ctx);
+      if (s.interval) clearInterval(s.interval);
+      s.left = 3; s.open = true;
+      updatePips(ctx, 3);
+      unlockNudgeBtn(ctx);
+      document.getElementById('nudgeCooldown-' + ctx).classList.add('hidden');
+      toggleOvertime(ctx);
+      const card  = document.getElementById('otCard-' + ctx);
+      const badge = document.getElementById('otBadge-' + ctx);
+      card.style.border    = '1px solid rgba(255,255,255,0.85)';
+      card.style.animation = 'none';
+      badge.innerHTML = '<span class="text-[9px] font-bold px-2 py-0.5 rounded-full" style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:#16A34A">✓ Resolved</span>';
+      badge.style.opacity = '1';
+    }
+
+    const backdrop    = document.getElementById('occupyBackdrop');
+    const occupyModal = document.getElementById('occupyModal');
+
+    function openOccupy(spotNum) {
+      document.getElementById('occupySpotNum').textContent = '#' + spotNum;
+      document.getElementById('hoursInput').value   = '';
+      document.getElementById('minutesInput').value = '';
+      backdrop.style.opacity        = '1';
+      backdrop.style.pointerEvents  = 'all';
+      occupyModal.style.top         = '50%';
+      occupyModal.style.transform   = 'translateY(-50%) scale(1)';
+      occupyModal.style.opacity     = '1';
+      occupyModal.style.pointerEvents = 'all';
+    }
+
+    function closeOccupy() {
+      backdrop.style.opacity        = '0';
+      backdrop.style.pointerEvents  = 'none';
+      occupyModal.style.opacity     = '0';
+      occupyModal.style.transform   = 'translateY(-50%) scale(0.95)';
+      occupyModal.style.pointerEvents = 'none';
+    }
+
+    function setTime(h, m) {
+      document.getElementById('hoursInput').value   = h;
+      document.getElementById('minutesInput').value = m === 0 ? '00' : m;
+    }
+
+    function confirmOccupy() {
+      const h = document.getElementById('hoursInput').value   || 0;
+      const m = document.getElementById('minutesInput').value || 0;
+      if (!h && !m) { alert('Please enter a charge time.'); return; }
+      closeOccupy();
+    }
+  </script>
+</body>
+</html>
