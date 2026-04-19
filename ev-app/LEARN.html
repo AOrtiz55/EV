@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EV Parking — React Learning Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #E8EAEE;
+      --surface: rgba(255,255,255,0.62);
+      --surface-inner: rgba(255,255,255,0.55);
+      --border: rgba(255,255,255,0.85);
+      --border-inner: rgba(255,255,255,0.75);
+      --text: #1A1D23;
+      --muted: #6B7280;
+      --subtle: #9CA3AF;
+      --green: #16A34A;
+      --green-bg: rgba(34,197,94,0.1);
+      --green-border: rgba(34,197,94,0.25);
+      --blue: #2563EB;
+      --blue-bg: rgba(37,99,235,0.08);
+      --blue-border: rgba(37,99,235,0.22);
+      --orange: #EA580C;
+      --orange-bg: rgba(234,88,12,0.08);
+      --orange-border: rgba(234,88,12,0.25);
+      --purple: #7C3AED;
+      --purple-bg: rgba(124,58,237,0.08);
+      --purple-border: rgba(124,58,237,0.22);
+      --red: #DC2626;
+      --red-bg: rgba(220,38,38,0.08);
+      --red-border: rgba(220,38,38,0.22);
+      --code-bg: rgba(26,29,35,0.06);
+      --code-block-bg: #1A1D23;
+      --glass-shadow: 0 4px 24px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.95);
+      --nav-width: 260px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(160deg, #E8EAEE 0%, #D8DADF 100%);
+      min-height: 100vh;
+      color: var(--text);
+      display: flex;
+    }
+
+    /* ── Ambient blobs ── */
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      top: -100px; left: -80px;
+      width: 500px; height: 500px;
+      background: rgba(255,255,255,0.3);
+      filter: blur(70px);
+    }
+    body::after {
+      bottom: 60px; right: -100px;
+      width: 420px; height: 420px;
+      background: rgba(200,205,215,0.35);
+      filter: blur(80px);
+    }
+
+    /* ── Sidebar nav ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--nav-width);
+      height: 100vh;
+      overflow-y: auto;
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      background: rgba(255,255,255,0.52);
+      border-right: 1px solid rgba(255,255,255,0.8);
+      box-shadow: 2px 0 20px rgba(0,0,0,0.06);
+      z-index: 100;
+      padding: 28px 0 40px;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-logo .icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: #1A1D23;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo .icon svg { width: 16px; height: 16px; }
+
+    .sidebar-logo .title { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.3; }
+    .sidebar-logo .sub { font-size: 10px; color: var(--subtle); margin-top: 1px; }
+
+    .nav-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      padding: 12px 20px 6px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 7px 20px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 0;
+      transition: all 0.15s ease;
+      border-left: 2px solid transparent;
+    }
+    .nav-link:hover {
+      color: var(--text);
+      background: rgba(0,0,0,0.03);
+      border-left-color: rgba(26,29,35,0.2);
+    }
+    .nav-link.active {
+      color: var(--text);
+      background: rgba(26,29,35,0.05);
+      border-left-color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Main content ── */
+    .main {
+      margin-left: var(--nav-width);
+      flex: 1;
+      padding: 48px 48px 96px;
+      max-width: calc(860px + var(--nav-width));
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 24px;
+      padding: 40px 48px;
+      margin-bottom: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 250px; height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, transparent 70%);
+    }
+
+    .hero-eyebrow {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-bottom: 10px;
+    }
+
+    .hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 560px;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 100px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-green { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+    .badge-blue  { background: var(--blue-bg);  border: 1px solid var(--blue-border);  color: var(--blue); }
+    .badge-orange{ background: var(--orange-bg);border: 1px solid var(--orange-border);color: var(--orange); }
+    .badge-purple{ background: var(--purple-bg);border: 1px solid var(--purple-border);color: var(--purple); }
+    .badge-dark  { background: rgba(26,29,35,0.07); border: 1px solid rgba(26,29,35,0.15); color: var(--text); }
+
+    /* ── Sections ── */
+    .section {
+      margin-bottom: 56px;
+      scroll-margin-top: 32px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .section-number {
+      width: 32px; height: 32px;
+      border-radius: 10px;
+      background: #1A1D23;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .section h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 32px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section h3 .file-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 100px;
+      background: var(--code-bg);
+      color: var(--muted);
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* ── Glass card ── */
+    .card {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+
+    .card-inner {
+      background: var(--surface-inner);
+      border: 1px solid var(--border-inner);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+
+    .card p, .card-inner p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 10px;
+    }
+    .card p:last-child, .card-inner p:last-child { margin-bottom: 0; }
+
+    /* ── Concept pills ── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .concept-pill {
+      background: var(--surface-inner);
+      border: 1px solid var(--border-inner);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .concept-pill .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      margin-bottom: 4px;
+    }
+
+    .concept-pill .value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--code-block-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 14px 0;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .code-header .lang {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .code-header .dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .code-header .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    pre {
+      padding: 20px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.85);
+    }
+
+    /* Syntax colors */
+    .kw   { color: #C792EA; }   /* keyword: const, function, return, if */
+    .fn   { color: #82AAFF; }   /* function names */
+    .str  { color: #C3E88D; }   /* strings */
+    .num  { color: #F78C6C; }   /* numbers */
+    .cmt  { color: rgba(255,255,255,0.28); font-style: italic; } /* comments */
+    .tag  { color: #F07178; }   /* JSX tags */
+    .attr { color: #FFCB6B; }   /* JSX attributes / props */
+    .typ  { color: #89DDFF; }   /* types */
+    .op   { color: rgba(255,255,255,0.55); } /* operators */
+
+    /* ── Inline code ── */
+    code {
+      font-family: 'Fira Code', monospace;
+      font-size: 12.5px;
+      background: var(--code-bg);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 5px;
+      padding: 1px 6px;
+      color: var(--text);
+    }
+
+    /* ── Info / tip / warning boxes ── */
+    .callout {
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+    .callout p {
+      font-size: 13.5px;
+      line-height: 1.7;
+      margin: 0;
+      color: var(--text);
+    }
+
+    .callout strong { font-weight: 700; }
+
+    .callout-blue   { background: var(--blue-bg);   border: 1px solid var(--blue-border); }
+    .callout-green  { background: var(--green-bg);  border: 1px solid var(--green-border); }
+    .callout-orange { background: var(--orange-bg); border: 1px solid var(--orange-border); }
+    .callout-purple { background: var(--purple-bg); border: 1px solid var(--purple-border); }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--glass-shadow);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 14px 18px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--subtle);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      background: rgba(255,255,255,0.4);
+    }
+
+    tbody td {
+      padding: 13px 18px;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      color: var(--muted);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,0.3); }
+
+    tbody td:first-child { font-weight: 600; color: var(--text); font-family: 'Fira Code', monospace; font-size: 12px; }
+    tbody td:nth-child(2) { color: var(--text); }
+
+    /* ── Folder tree ── */
+    .folder-tree {
+      background: var(--code-block-bg);
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 2;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .folder-tree .dir   { color: #FFCB6B; font-weight: 600; }
+    .folder-tree .file  { color: rgba(255,255,255,0.65); }
+    .folder-tree .note  { color: rgba(255,255,255,0.28); font-style: italic; }
+    .folder-tree .arrow { color: rgba(255,255,255,0.18); }
+
+    /* ── Flow diagram ── */
+    .flow {
+      background: var(--code-block-bg);
+      border-radius: 14px;
+      padding: 28px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 2;
+      overflow-x: auto;
+    }
+
+    .flow .node-page   { color: #C792EA; font-weight: 700; }
+    .flow .node-comp   { color: #82AAFF; }
+    .flow .node-state  { color: #C3E88D; }
+    .flow .node-arrow  { color: rgba(255,255,255,0.25); }
+    .flow .node-label  { color: rgba(255,255,255,0.4); font-style: italic; }
+
+    /* ── Step list ── */
+    .step-list {
+      counter-reset: step;
+      list-style: none;
+    }
+
+    .step-list li {
+      counter-increment: step;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+
+    .step-list li::before {
+      content: counter(step);
+      min-width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: #1A1D23;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .step-list li p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      margin: 48px 0;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════
+       SIDEBAR
+  ══════════════════════════════ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">
+        <svg fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="title">EV Parking</div>
+        <div class="sub">React Learning Guide</div>
+      </div>
+    </div>
+
+    <div class="nav-section-label">Overview</div>
+    <a href="#overview" class="nav-link">What is Next.js?</a>
+    <a href="#folders" class="nav-link">Folder Structure</a>
+    <a href="#concepts" class="nav-link">Core React Concepts</a>
+
+    <div class="nav-section-label">File Walkthroughs</div>
+    <a href="#globals" class="nav-link">globals.css</a>
+    <a href="#layout" class="nav-link">layout.tsx</a>
+    <a href="#page" class="nav-link">page.tsx</a>
+    <a href="#types" class="nav-link">lib/types.ts</a>
+    <a href="#data" class="nav-link">lib/data.ts</a>
+    <a href="#header" class="nav-link">Header.tsx</a>
+    <a href="#mystats" class="nav-link">MyStatsCard.tsx</a>
+    <a href="#spotrow" class="nav-link">SpotRow.tsx</a>
+    <a href="#overtime" class="nav-link">OvertimeCard.tsx</a>
+    <a href="#stations" class="nav-link">ChargingStationsCard.tsx</a>
+    <a href="#sheet" class="nav-link">StationSheet.tsx</a>
+    <a href="#bottomnav" class="nav-link">BottomNav.tsx</a>
+    <a href="#freepanel" class="nav-link">EarliestFreePanel.tsx</a>
+    <a href="#modal" class="nav-link">OccupyModal.tsx</a>
+
+    <div class="nav-section-label">Reference</div>
+    <a href="#stateflow" class="nav-link">How State Flows</a>
+    <a href="#cheatsheet" class="nav-link">Cheat Sheet</a>
+  </nav>
+
+  <!-- ══════════════════════════════
+       MAIN
+  ══════════════════════════════ -->
+  <main class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-eyebrow">React + Next.js · Learning Guide</div>
+      <h1>EV Parking App —<br/>How It Was Built</h1>
+      <p>This document explains every file, every decision, and every React concept used to build this app — written so you can study it as a learning reference for your React test.</p>
+      <div class="hero-badges">
+        <span class="badge badge-dark">Next.js 16 App Router</span>
+        <span class="badge badge-blue">TypeScript</span>
+        <span class="badge badge-green">Tailwind CSS</span>
+        <span class="badge badge-purple">React Hooks</span>
+        <span class="badge badge-orange">Frosted Glass UI</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════ SECTION 1 ═══════════════════════════ -->
+    <section class="section" id="overview">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <h2>What is Next.js?</h2>
+      </div>
+
+      <div class="card">
+        <p><strong>React</strong> is a JavaScript library for building user interfaces. It lets you break a webpage into small reusable pieces called <strong>components</strong>. Each component is just a function that returns HTML-like code called JSX.</p>
+        <p><strong>Next.js</strong> is a framework built on top of React. It adds things React alone does not give you:</p>
+      </div>
+
+      <div class="concept-grid">
+        <div class="concept-pill">
+          <div class="label">File-based Routing</div>
+          <div class="value">Your file path = your URL</div>
+        </div>
+        <div class="concept-pill">
+          <div class="label">Server-side Code</div>
+          <div class="value">Run logic before the page loads</div>
+        </div>
+        <div class="concept-pill">
+          <div class="label">Font Optimization</div>
+          <div class="value">Fonts served from your own server</div>
+        </div>
+        <div class="concept-pill">
+          <div class="label">Code Splitting</div>
+          <div class="value">Only loads JS the page needs</div>
+        </div>
+        <div class="concept-pill">
+          <div class="label">App Router</div>
+          <div class="value">Modern way to structure Next.js</div>
+        </div>
+        <div class="concept-pill">
+          <div class="label">Server Components</div>
+          <div class="value">Components that run on the server</div>
+        </div>
+      </div>
+
+      <div class="callout callout-blue">
+        <div class="icon">💡</div>
+        <p><strong>App Router vs Pages Router:</strong> Older Next.js projects used a <code>pages/</code> folder. The newer <strong>App Router</strong> uses <code>app/</code>. We use App Router because it is the current standard and supports the latest React features like Server Components.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ═══════════════════════════ SECTION 2 ═══════════════════════════ -->
+    <section class="section" id="folders">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <h2>Folder Structure — Why Each Folder Exists</h2>
+      </div>
+
+      <div class="folder-tree">
+        <div><span class="dir">ev-app/</span></div>
+        <div>&nbsp;&nbsp;<span class="dir">├── app/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Next.js App Router lives here</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── globals.css</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← CSS that applies to the ENTIRE app</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── layout.tsx</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Outer shell wrapping every page</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">└── page.tsx</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Home page (URL: /)</span></div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;<span class="dir">├── components/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Reusable UI building blocks</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── Header.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── MyStatsCard.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── SpotRow.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── OvertimeCard.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── ChargingStationsCard.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── StationSheet.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── BottomNav.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── EarliestFreePanel.tsx</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">└── OccupyModal.tsx</span></div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;<span class="dir">├── lib/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Non-UI logic: data, types, utilities</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">├── types.ts</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← TypeScript type definitions</span></div>
+        <div>&nbsp;&nbsp;<span class="arrow">│</span>&nbsp;&nbsp;<span class="file">└── data.ts</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Static mock data (→ API calls later)</span></div>
+        <div>&nbsp;</div>
+        <div>&nbsp;&nbsp;<span class="file">├── public/</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Static files (images, icons)</span></div>
+        <div>&nbsp;&nbsp;<span class="file">├── package.json</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Dependencies and scripts</span></div>
+        <div>&nbsp;&nbsp;<span class="file">├── tsconfig.json</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← TypeScript configuration</span></div>
+        <div>&nbsp;&nbsp;<span class="file">└── next.config.ts</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="note">← Next.js configuration</span></div>
+      </div>
+
+      <div class="callout callout-blue" style="margin-top:16px">
+        <div class="icon">📁</div>
+        <p><strong>Why components/?</strong> React is all about breaking UI into small, reusable pieces. Instead of one giant file (like mockup.html), we split each visual section into its own file. When something breaks, you know exactly which file to look in. And you can reuse a component in multiple places.</p>
+      </div>
+      <div class="callout callout-green">
+        <div class="icon">📦</div>
+        <p><strong>Why lib/?</strong> <code>lib/</code> holds code that is not a visual component. Types and data don't render anything — they just describe information. When you connect a real backend later, you swap out the contents of <code>lib/data.ts</code> and all components continue to work unchanged.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ═══════════════════════════ SECTION 3 ═══════════════════════════ -->
+    <section class="section" id="concepts">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <h2>Core React Concepts You Will See Everywhere</h2>
+      </div>
+
+      <h3>Components</h3>
+      <div class="card">
+        <p>A component is a <strong>function that returns JSX</strong>. JSX looks like HTML but it's actually JavaScript. By convention, component names start with a capital letter.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// This is a component — a function that returns JSX</span>
+<span class="kw">function</span> <span class="fn">Greeting</span>() {
+  <span class="kw">return</span> <span class="tag">&lt;p&gt;</span>Hello, world!<span class="tag">&lt;/p&gt;</span>
+}</pre>
+      </div>
+
+      <h3>Props</h3>
+      <div class="card">
+        <p>Props (short for properties) are how you <strong>pass data into a component</strong> from its parent. Think of them like arguments to a function. The parent decides what values to send; the child just receives and uses them.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Component accepts a "name" prop</span>
+<span class="kw">function</span> <span class="fn">Greeting</span>({ name }<span class="op">:</span> { name<span class="op">:</span> <span class="typ">string</span> }) {
+  <span class="kw">return</span> <span class="tag">&lt;p&gt;</span>Hello, {name}!<span class="tag">&lt;/p&gt;</span>
+}
+
+<span class="cmt">// Parent passes the prop</span>
+<span class="tag">&lt;Greeting</span> <span class="attr">name</span>=<span class="str">"Aaron"</span> <span class="tag">/&gt;</span></pre>
+      </div>
+
+      <h3>State — <code>useState</code></h3>
+      <div class="card">
+        <p>State is data that <strong>can change over time</strong>. When state changes, React automatically re-renders the component to show the new value. <code>useState</code> always returns two things: the current value, and a function to update it.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">import</span> { useState } <span class="kw">from</span> <span class="str">'react'</span>;
+
+<span class="kw">function</span> <span class="fn">Counter</span>() {
+  <span class="cmt">// count = current value, setCount = update function</span>
+  <span class="kw">const</span> [count, setCount] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">0</span>); <span class="cmt">// starts at 0</span>
+
+  <span class="kw">return</span> (
+    <span class="tag">&lt;button</span> <span class="attr">onClick</span>={() <span class="op">=&gt;</span> <span class="fn">setCount</span>(count <span class="op">+</span> <span class="num">1</span>)}<span class="tag">&gt;</span>
+      Clicked {count} times
+    <span class="tag">&lt;/button&gt;</span>
+  );
+}</pre>
+      </div>
+
+      <h3>useCallback</h3>
+      <div class="card">
+        <p><code>useCallback</code> <strong>memoizes a function</strong> — it prevents the function from being recreated on every render. Use it when you're passing a function as a prop to a child, so the child doesn't re-render unnecessarily.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">const</span> handleClick <span class="op">=</span> <span class="fn">useCallback</span>(() <span class="op">=&gt;</span> {
+  <span class="fn">doSomething</span>();
+}, []); <span class="cmt">// [] = only create this function once</span></pre>
+      </div>
+
+      <h3>useRef</h3>
+      <div class="card">
+        <p><code>useRef</code> holds a value that <strong>persists across renders but does NOT trigger a re-render</strong> when it changes. Commonly used to store timer IDs (so you can clear them later) or references to DOM elements.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">const</span> timerRef <span class="op">=</span> <span class="fn">useRef</span><span class="op">&lt;</span><span class="typ">ReturnType</span><span class="op">&lt;</span><span class="kw">typeof</span> setInterval<span class="op">&gt; | </span><span class="typ">null</span><span class="op">&gt;</span>(<span class="num">null</span>);
+
+<span class="cmt">// Store the timer ID</span>
+timerRef.current <span class="op">=</span> <span class="fn">setInterval</span>(() <span class="op">=&gt;</span> { <span class="cmt">/* ... */</span> }, <span class="num">1000</span>);
+
+<span class="cmt">// Clear it later without causing a re-render</span>
+<span class="fn">clearInterval</span>(timerRef.current);</pre>
+      </div>
+
+      <h3><code>'use client'</code></h3>
+      <div class="callout callout-orange">
+        <div class="icon">⚡</div>
+        <p>In Next.js App Router, components are <strong>Server Components by default</strong> — they run on the server and cannot use browser features. When you write <code>'use client'</code> at the top of a file, you're telling Next.js: <em>"this component runs in the browser."</em><br><br><strong>Rule:</strong> Add <code>'use client'</code> whenever your component uses <code>useState</code>, <code>useCallback</code>, <code>useRef</code>, or any event handler like <code>onClick</code>.</p>
+      </div>
+
+      <h3>TypeScript Interfaces</h3>
+      <div class="card">
+        <p>TypeScript lets you define the <strong>shape of your data</strong> so mistakes are caught before the app runs. A <code>?</code> after a field name means it's optional. A union type like <code>'a' | 'b'</code> means the value can only be one of those specific strings.</p>
+      </div>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TypeScript</div>
+        </div>
+        <pre><span class="kw">interface</span> <span class="typ">Spot</span> {
+  id<span class="op">:</span> <span class="typ">number</span>;
+  status<span class="op">:</span> <span class="str">'available'</span> <span class="op">|</span> <span class="str">'in-use'</span> <span class="op">|</span> <span class="str">'overtime'</span>; <span class="cmt">// union type</span>
+  occupant<span class="op">?:</span> <span class="typ">string</span>;  <span class="cmt">// ? = optional</span>
+  startTime<span class="op">?:</span> <span class="typ">string</span>;
+}</pre>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ═══════════════════════════ FILE WALKTHROUGHS ═══════════════════════════ -->
+    <section class="section" id="globals">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <h2>File Walkthroughs</h2>
+      </div>
+
+      <h3><span class="file-tag">globals.css</span></h3>
+      <div class="card">
+        <p>This file holds CSS that applies globally to the entire app. Tailwind's base styles are imported here, and we add custom classes that Tailwind cannot express on its own.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">CSS</div>
+        </div>
+        <pre><span class="attr">@import</span> <span class="str">"tailwindcss"</span>;</pre>
+      </div>
+      <div class="callout callout-blue">
+        <div class="icon">📌</div>
+        <p>This line loads all of Tailwind's utility classes. Without it, classes like <code>flex</code>, <code>rounded-xl</code>, and <code>text-sm</code> would not work.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">CSS</div>
+        </div>
+        <pre><span class="fn">.glass</span> {
+  <span class="attr">backdrop-filter</span>: blur(28px) saturate(180%);
+  <span class="attr">-webkit-backdrop-filter</span>: blur(28px) saturate(180%);
+  <span class="attr">background</span>: rgba(255,255,255,0.58);
+  <span class="attr">border</span>: 1px solid rgba(255,255,255,0.85);
+  <span class="attr">box-shadow</span>: 0 4px 24px rgba(0,0,0,0.07), ...;
+}</pre>
+      </div>
+      <div class="callout callout-purple">
+        <div class="icon">🪟</div>
+        <p><code>backdrop-filter: blur()</code> is the CSS that creates the frosted glass effect — it blurs whatever is <em>behind</em> the element. The <code>-webkit-</code> prefix is needed for Safari browsers. <code>rgba(255,255,255,0.58)</code> is white at 58% opacity, which lets the blur show through.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">CSS</div>
+        </div>
+        <pre><span class="attr">@keyframes</span> pulse-dot {
+  0%, 100% { opacity: 1;   box-shadow: 0 0 6px rgba(34,197,94,0.8); }
+  50%       { opacity: 0.5; box-shadow: 0 0 0px rgba(34,197,94,0); }
+}
+<span class="fn">.pulse</span> { <span class="attr">animation</span>: pulse-dot 2s ease-in-out infinite; }</pre>
+      </div>
+      <div class="callout callout-green">
+        <div class="icon">💚</div>
+        <p><code>@keyframes</code> defines the steps of a CSS animation (from fully visible → half visible → back). The <code>.pulse</code> class applies it. This creates the breathing green dot on available parking spots.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">CSS</div>
+        </div>
+        <pre><span class="fn">.sheet-collapsed</span> { <span class="attr">transform</span>: translateY(100%); }
+<span class="fn">.sheet-expanded</span>  { <span class="attr">transform</span>: translateY(0%); }</pre>
+      </div>
+      <div class="callout callout-blue">
+        <div class="icon">📌</div>
+        <p><code>translateY(100%)</code> moves an element down by 100% of its own height — hiding it below the screen. Swapping to <code>sheet-expanded</code> slides it back up. This is how the "View all spots" sheet animates open and closed.</p>
+      </div>
+    </section>
+
+    <!-- layout.tsx -->
+    <section class="section" id="layout">
+      <h3><span class="file-tag">layout.tsx</span></h3>
+      <div class="card">
+        <p>In Next.js, <code>layout.tsx</code> is a special file that wraps <strong>every page</strong> in your app automatically. It's the outermost shell — like a frame around a picture. Every page gets placed inside it.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">import</span> { Inter } <span class="kw">from</span> <span class="str">"next/font/google"</span>;
+
+<span class="kw">const</span> inter <span class="op">=</span> <span class="fn">Inter</span>({ subsets: [<span class="str">"latin"</span>], variable: <span class="str">"--font-inter"</span> });</pre>
+      </div>
+      <div class="callout callout-blue">
+        <div class="icon">🔤</div>
+        <p>Next.js has a built-in <code>next/font</code> system that downloads Google Fonts at build time and serves them from your own server. This is faster than loading from Google's CDN. <code>subsets: ["latin"]</code> only downloads the Latin character set, keeping the file small.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">export const</span> metadata<span class="op">:</span> <span class="typ">Metadata</span> <span class="op">=</span> {
+  title: <span class="str">"EV Parking"</span>,
+  description: <span class="str">"EV parking spot management"</span>,
+};</pre>
+      </div>
+      <div class="callout callout-green">
+        <div class="icon">🏷️</div>
+        <p>Exporting <code>metadata</code> from a layout or page file automatically sets the browser tab title and meta description. You don't write a <code>&lt;head&gt;</code> tag yourself — Next.js handles it.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">export default function</span> <span class="fn">RootLayout</span>({ children }<span class="op">:</span> { children<span class="op">:</span> <span class="typ">React.ReactNode</span> }) {
+  <span class="kw">return</span> (
+    <span class="tag">&lt;html</span> <span class="attr">lang</span>=<span class="str">"en"</span><span class="tag">&gt;</span>
+      <span class="tag">&lt;body&gt;</span>{children}<span class="tag">&lt;/body&gt;</span>
+    <span class="tag">&lt;/html&gt;</span>
+  );
+}</pre>
+      </div>
+      <div class="callout callout-purple">
+        <div class="icon">👶</div>
+        <p><code>children</code> is a special React prop that represents whatever is rendered inside this component. When Next.js renders your home page, it wraps it in this layout and passes the page as <code>children</code>. <code>React.ReactNode</code> is the TypeScript type for "anything React can render."</p>
+      </div>
+    </section>
+
+    <!-- page.tsx -->
+    <section class="section" id="page">
+      <h3><span class="file-tag">page.tsx</span></h3>
+      <div class="card">
+        <p>In the Next.js App Router, any file named <code>page.tsx</code> inside the <code>app/</code> folder becomes a URL route. <code>app/page.tsx</code> maps to the root URL <code>/</code>. If you created <code>app/history/page.tsx</code>, it would map to <code>/history</code>.</p>
+        <p>This file is the <strong>brain of the app</strong>. It owns all shared state and passes it down to child components.</p>
+      </div>
+
+      <div class="callout callout-orange">
+        <div class="icon">⚡</div>
+        <p><strong>Why <code>'use client'</code>?</strong> This page uses <code>useState</code> and passes functions as event handlers, so it must run in the browser.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">const</span> [sheetOpen, setSheetOpen] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">false</span>);
+<span class="cmt">// Controls the full-screen "Charging Stations" sheet</span>
+<span class="cmt">// false = collapsed (hidden below screen), true = expanded</span>
+
+<span class="kw">const</span> [occupyOpen, setOccupyOpen] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">false</span>);
+<span class="kw">const</span> [occupySpotId, setOccupySpotId] <span class="op">=</span> <span class="fn">useState</span><span class="op">&lt;</span><span class="typ">number | null</span><span class="op">&gt;</span>(<span class="num">null</span>);
+<span class="cmt">// Two pieces of state for the Occupy modal:</span>
+<span class="cmt">// occupyOpen — is the modal visible?</span>
+<span class="cmt">// occupySpotId — which spot number was clicked?</span>
+
+<span class="kw">const</span> [overtimeOverlayOpen, setOvertimeOverlayOpen] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">false</span>);
+<span class="kw">const</span> [overtimeResolved, setOvertimeResolved] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">false</span>);
+<span class="kw">const</span> [nudgeLeft, setNudgeLeft] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">3</span>);
+<span class="cmt">// Shared between home card AND sheet — both show Spot #2</span>
+<span class="cmt">// Must live here so both instances stay in sync</span></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">const</span> openOccupy <span class="op">=</span> <span class="fn">useCallback</span>((<span class="attr">spotId</span><span class="op">:</span> <span class="typ">number</span>) <span class="op">=&gt;</span> {
+  <span class="fn">setOccupySpotId</span>(spotId);
+  <span class="fn">setOccupyOpen</span>(<span class="num">true</span>);
+}, []); <span class="cmt">// [] = create once, reuse forever</span></pre>
+      </div>
+      <div class="callout callout-blue">
+        <div class="icon">💡</div>
+        <p>This function is passed as a prop to multiple children (<code>ChargingStationsCard</code>, <code>StationSheet</code>). <code>useCallback</code> with <code>[]</code> creates it only once. Without this, a new function would be created on every render, which can cause unnecessary child re-renders.</p>
+      </div>
+    </section>
+
+    <!-- types.ts -->
+    <section class="section" id="types">
+      <h3><span class="file-tag">lib/types.ts</span></h3>
+      <div class="card">
+        <p>TypeScript types describe the <strong>shape of your data</strong>. By defining types in one place, every file that imports them gets automatic error checking — if you try to use a property that doesn't exist, TypeScript warns you before the app runs.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TypeScript</div>
+        </div>
+        <pre><span class="kw">export type</span> <span class="typ">SpotStatus</span> <span class="op">=</span> <span class="str">'available'</span> <span class="op">|</span> <span class="str">'in-use'</span> <span class="op">|</span> <span class="str">'overtime'</span>;
+<span class="cmt">// Union type — can ONLY be one of these three values</span>
+<span class="cmt">// If you type 'Available' or 'free', TypeScript shows an error</span>
+
+<span class="kw">export interface</span> <span class="typ">Spot</span> {
+  id<span class="op">:</span> <span class="typ">number</span>;
+  status<span class="op">:</span> <span class="typ">SpotStatus</span>;
+  occupant<span class="op">?:</span> <span class="typ">string</span>;      <span class="cmt">// ? = optional (available spots have no occupant)</span>
+  startTime<span class="op">?:</span> <span class="typ">string</span>;
+  timeToFull<span class="op">?:</span> <span class="typ">string</span>;
+  overtimeMinutes<span class="op">?:</span> <span class="typ">number</span>; <span class="cmt">// only overtime spots need this</span>
+}</pre>
+      </div>
+    </section>
+
+    <!-- data.ts -->
+    <section class="section" id="data">
+      <h3><span class="file-tag">lib/data.ts</span></h3>
+      <div class="card">
+        <p>Right now the app uses hardcoded data. When you connect a real backend later, you'll replace this file's contents with API calls. Because all components import from this file, the swap is easy — the components themselves don't need to change.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TypeScript</div>
+        </div>
+        <pre><span class="kw">export const</span> SPOTS<span class="op">:</span> <span class="typ">Spot[]</span> <span class="op">=</span> [
+  { id: <span class="num">1</span>,  status: <span class="str">'available'</span> },
+  { id: <span class="num">2</span>,  status: <span class="str">'overtime'</span>,  occupant: <span class="str">'Maria G.'</span>, overtimeMinutes: <span class="num">8</span> },
+  { id: <span class="num">4</span>,  status: <span class="str">'in-use'</span>,    occupant: <span class="str">'James T.'</span>, timeToFull: <span class="str">'42 min'</span> },
+  <span class="cmt">// ...</span>
+];
+<span class="cmt">// Spot[] means "an array of Spot objects"</span>
+<span class="cmt">// export makes this available to other files that import it</span></pre>
+      </div>
+    </section>
+
+    <!-- Header.tsx -->
+    <section class="section" id="header">
+      <h3><span class="file-tag">Header.tsx</span></h3>
+      <div class="card">
+        <p>The header (logo, welcome text, logout, live tracking) is isolated in its own file. If you ever want to change the header — swap the user's name, add a notification bell, change the colors — you only touch this one file.</p>
+        <p>No <code>'use client'</code> needed here because this component has no state. It's a <strong>Server Component</strong> that just renders static UI.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Radial gradient creates the "light bloom" at the top</span>
+<span class="tag">&lt;div</span> <span class="attr">style</span>={{
+  background: <span class="str">'radial-gradient(ellipse 70% 60% at 50% -10%, rgba(255,255,255,0.6) 0%, transparent 70%)'</span>
+}} <span class="tag">/&gt;</span>
+
+<span class="cmt">// The green pulse dot — class defined in globals.css</span>
+<span class="tag">&lt;span</span> <span class="attr">className</span>=<span class="str">"w-2 h-2 rounded-full pulse"</span>
+      <span class="attr">style</span>={{ background: <span class="str">'#22C55E'</span> }} <span class="tag">/&gt;</span></pre>
+      </div>
+    </section>
+
+    <!-- MyStatsCard.tsx -->
+    <section class="section" id="mystats">
+      <h3><span class="file-tag">MyStatsCard.tsx</span></h3>
+      <div class="card">
+        <p>Shows the logged-in user's current charging session: Spot #1, Start/Stop/Remain times, Consumption, and Charge %. It directly imports <code>MY_STATS</code> from <code>lib/data.ts</code> instead of receiving props — because there's only ever one "my stats" section.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Instead of copy-pasting 3 identical divs, we use .map()</span>
+{[
+  { label: <span class="str">'Start'</span>,  value: s.startTime },
+  { label: <span class="str">'Stop'</span>,   value: s.stopTime },
+  { label: <span class="str">'Remain'</span>, value: s.remain },
+].<span class="fn">map</span>(({ label, value }) <span class="op">=&gt;</span> (
+  <span class="tag">&lt;div</span> <span class="attr">key</span>={label} <span class="attr">className</span>=<span class="str">"glass-inner rounded-xl p-2 text-center"</span><span class="tag">&gt;</span>
+    <span class="tag">&lt;p&gt;</span>{label}<span class="tag">&lt;/p&gt;</span>
+    <span class="tag">&lt;p&gt;</span>{value}<span class="tag">&lt;/p&gt;</span>
+  <span class="tag">&lt;/div&gt;</span>
+))}</pre>
+      </div>
+      <div class="callout callout-green">
+        <div class="icon">🗺️</div>
+        <p><strong>The .map() pattern</strong> is one of the most common in React. It creates an array of objects, then maps each one to a JSX element. The <code>key</code> prop is required — React uses it to track which item is which when the list updates. Always use a unique value for <code>key</code>.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Template literal inserts the JS value into a string</span>
+<span class="tag">&lt;div</span> <span class="attr">className</span>=<span class="str">"charge-bar h-full rounded-full"</span>
+     <span class="attr">style</span>={{ width: <span class="str">`${s.chargePercent}%`</span> }} <span class="tag">/&gt;</span>
+<span class="cmt">// If chargePercent = 74, result is the string "74%"</span></pre>
+      </div>
+    </section>
+
+    <!-- SpotRow.tsx -->
+    <section class="section" id="spotrow">
+      <h3><span class="file-tag">SpotRow.tsx</span></h3>
+      <div class="card">
+        <p>There are 9 non-overtime spots. Instead of copy-pasting HTML for each one, <code>SpotRow</code> handles all states (available, in-use) with one component. The parent passes a <code>spot</code> object and the component decides how to render based on <code>spot.status</code>.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="kw">interface</span> <span class="typ">SpotRowProps</span> {
+  spot<span class="op">:</span> <span class="typ">Spot</span>;
+  variant<span class="op">:</span> <span class="str">'card'</span> <span class="op">|</span> <span class="str">'sheet'</span>;       <span class="cmt">// home card or full-screen sheet?</span>
+  onOccupy<span class="op">:</span> (spotId<span class="op">:</span> <span class="typ">number</span>) <span class="op">=&gt;</span> <span class="typ">void</span>; <span class="cmt">// function passed from parent</span>
+}</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// && = conditional rendering: if true, render it; if false, render nothing</span>
+{isAvailable <span class="op">&&</span> (
+  <span class="tag">&lt;span</span> <span class="attr">className</span>=<span class="str">"w-2 h-2 rounded-full pulse"</span>
+        <span class="attr">style</span>={{ background: <span class="str">'#22C55E'</span> }} <span class="tag">/&gt;</span>
+)}
+
+<span class="cmt">// Clicking Occupy calls the function passed from the parent</span>
+<span class="tag">&lt;button</span> <span class="attr">onClick</span>={() <span class="op">=&gt;</span> <span class="fn">onOccupy</span>(spot.id)}<span class="tag">&gt;</span>Occupy<span class="tag">&lt;/button&gt;</span>
+<span class="cmt">// SpotRow doesn't manage state — it reports clicks upward</span></pre>
+      </div>
+
+      <div class="callout callout-purple">
+        <div class="icon">🔼</div>
+        <p><strong>Lifting state up:</strong> SpotRow doesn't know what to do when Occupy is clicked — it just calls <code>onOccupy(spot.id)</code> and lets the parent handle it. The parent (<code>page.tsx</code>) opens the modal. This pattern is called <em>lifting state up</em> and it's fundamental to React.</p>
+      </div>
+    </section>
+
+    <!-- OvertimeCard.tsx -->
+    <section class="section" id="overtime">
+      <h3><span class="file-tag">OvertimeCard.tsx</span></h3>
+      <div class="card">
+        <p>The most complex component. Spot #2 is in overtime and has: a toggle-able overlay, a nudge button, a 20-minute cooldown timer with progress bar, and a "They left" resolution flow. All this logic lives here.</p>
+      </div>
+
+      <div class="callout callout-orange">
+        <div class="icon">⚡</div>
+        <p><strong>Why <code>'use client'</code>?</strong> This component uses <code>useState</code>, <code>useRef</code>, and <code>useCallback</code> — all browser-only React hooks.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Local state — only this component cares about it</span>
+<span class="kw">const</span> [cooldownActive, setCooldownActive] <span class="op">=</span> <span class="fn">useState</span>(<span class="num">false</span>);
+<span class="kw">const</span> [remainingSecs, setRemainingSecs] <span class="op">=</span> <span class="fn">useState</span>(COOLDOWN_SECS);
+
+<span class="cmt">// Shared state — passed DOWN from page.tsx as props</span>
+<span class="cmt">// (so both the home card and the sheet stay in sync)</span>
+overlayOpen<span class="op">:</span> <span class="typ">boolean</span>;
+onToggleOverlay<span class="op">:</span> () <span class="op">=&gt;</span> <span class="typ">void</span>;
+nudgeLeft<span class="op">:</span> <span class="typ">number</span>;
+onNudgeLeftChange<span class="op">:</span> (n<span class="op">:</span> <span class="typ">number</span>) <span class="op">=&gt;</span> <span class="typ">void</span>;</pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// useRef stores the timer ID without causing re-renders</span>
+<span class="kw">const</span> intervalRef <span class="op">=</span> <span class="fn">useRef</span><span class="op">&lt;</span><span class="typ">ReturnType</span><span class="op">&lt;</span><span class="kw">typeof</span> setInterval<span class="op">&gt; | </span><span class="typ">null</span><span class="op">&gt;</span>(<span class="num">null</span>);
+
+intervalRef.current <span class="op">=</span> <span class="fn">setInterval</span>(() <span class="op">=&gt;</span> {
+  secs<span class="op">--</span>;
+  <span class="fn">setRemainingSecs</span>(secs);    <span class="cmt">// update the countdown display</span>
+  <span class="kw">if</span> (secs <span class="op">&lt;=</span> <span class="num">0</span>) {
+    <span class="fn">clearInterval</span>(intervalRef.current<span class="op">!</span>); <span class="cmt">// ! = "I know this isn't null"</span>
+    <span class="kw">if</span> (newLeft <span class="op">&gt;</span> <span class="num">0</span>) <span class="fn">setCooldownActive</span>(<span class="num">false</span>); <span class="cmt">// unlock nudge if pips remain</span>
+  }
+}, <span class="num">1000</span>); <span class="cmt">// runs every 1000ms = 1 second</span></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Pip dots — filled if nudges remain, grey if used</span>
+{[<span class="num">3</span>, <span class="num">2</span>, <span class="num">1</span>].<span class="fn">map</span>((pip) <span class="op">=&gt;</span> (
+  <span class="tag">&lt;span</span>
+    <span class="attr">key</span>={pip}
+    <span class="attr">style</span>={{
+      background: nudgeLeft <span class="op">&gt;=</span> pip <span class="op">?</span> <span class="str">'#EA580C'</span> <span class="op">:</span> <span class="str">'rgba(0,0,0,0.1)'</span>,
+    }}
+  <span class="tag">/&gt;</span>
+))}
+<span class="cmt">// When nudgeLeft=2: pip 3 → grey (2≥3 false), pips 1&2 → orange</span></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// e.stopPropagation() prevents click from bubbling up</span>
+<span class="cmt">// to the transparent button behind the overlay</span>
+<span class="kw">const</span> handleNudge <span class="op">=</span> <span class="fn">useCallback</span>((<span class="attr">e</span><span class="op">:</span> <span class="typ">React.MouseEvent</span>) <span class="op">=&gt;</span> {
+  e.<span class="fn">stopPropagation</span>();
+  <span class="cmt">// ...</span>
+}, [nudgeLeft, cooldownActive, onNudgeLeftChange]);</pre>
+      </div>
+    </section>
+
+    <!-- ChargingStationsCard.tsx -->
+    <section class="section" id="stations">
+      <h3><span class="file-tag">ChargingStationsCard.tsx</span></h3>
+      <div class="card">
+        <p>The "Charging Stations" card on the home screen. Contains the stat chips (Available / In Use / Earliest Free) and the spot list. It's a container — it receives all interaction handlers as props from <code>page.tsx</code> and passes them down to child components.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Computed OUTSIDE the component — only runs once at module load</span>
+<span class="cmt">// because the data is static (no need to recompute every render)</span>
+<span class="kw">const</span> available <span class="op">=</span> SPOTS.<span class="fn">filter</span>((s) <span class="op">=&gt;</span> s.status <span class="op">===</span> <span class="str">'available'</span>).length;
+<span class="kw">const</span> inUse <span class="op">=</span> SPOTS.<span class="fn">filter</span>((s) <span class="op">=&gt;</span> s.status <span class="op">===</span> <span class="str">'in-use'</span>).length;
+
+<span class="cmt">// .filter() creates a new array with only matching items</span>
+<span class="cmt">// .length gives you the count</span></pre>
+      </div>
+
+      <div class="callout callout-orange">
+        <div class="icon">⚠️</div>
+        <p><strong>Prop drilling:</strong> This component receives overtime state from <code>page.tsx</code> and passes it straight through to <code>OvertimeCard</code> — it doesn't use the overtime state itself. This is called <em>prop drilling</em>. Acceptable in small apps; larger apps use React Context to avoid it.</p>
+      </div>
+    </section>
+
+    <!-- StationSheet.tsx -->
+    <section class="section" id="sheet">
+      <h3><span class="file-tag">StationSheet.tsx</span></h3>
+      <div class="card">
+        <p>The full-screen slide-up panel showing all 10 spots. Structurally similar to <code>ChargingStationsCard</code> but with a drag handle, a collapse button, and each spot row uses <code>.glass</code> instead of a transparent background.</p>
+        <p>It exists as a separate component because it has different visual styling and different structural elements. Combining them into one component with lots of conditions would be harder to read.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Toggling CSS classes drives the slide animation</span>
+<span class="tag">&lt;div</span>
+  <span class="attr">className</span>={<span class="str">`sheet-transition ${open ? 'sheet-expanded' : 'sheet-collapsed'}`</span>}
+<span class="tag">&gt;</span>
+<span class="cmt">// sheet-collapsed → transform: translateY(100%)  — hidden below screen</span>
+<span class="cmt">// sheet-expanded  → transform: translateY(0%)    — normal position</span>
+<span class="cmt">// sheet-transition → transition: transform 0.4s  — smooth animation</span></pre>
+      </div>
+    </section>
+
+    <!-- BottomNav.tsx -->
+    <section class="section" id="bottomnav">
+      <h3><span class="file-tag">BottomNav.tsx</span></h3>
+      <div class="card">
+        <p>The bottom navigation bar: Home, Chat, History, Profile. The active tab is passed in as a prop so the parent (<code>page.tsx</code>) controls which tab is selected.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Array-driven tabs — adding a new tab = adding one object</span>
+<span class="kw">const</span> tabs <span class="op">=</span> [
+  { id: <span class="str">'home'</span>,    label: <span class="str">'Home'</span>,    icon: <span class="tag">&lt;svg&gt;</span>...<span class="tag">&lt;/svg&gt;</span> },
+  { id: <span class="str">'chat'</span>,    label: <span class="str">'Chat'</span>,    icon: <span class="tag">&lt;svg&gt;</span>...<span class="tag">&lt;/svg&gt;</span> },
+  { id: <span class="str">'history'</span>, label: <span class="str">'History'</span>, icon: <span class="tag">&lt;svg&gt;</span>...<span class="tag">&lt;/svg&gt;</span> },
+  { id: <span class="str">'profile'</span>, label: <span class="str">'Profile'</span>, icon: <span class="tag">&lt;svg&gt;</span>...<span class="tag">&lt;/svg&gt;</span> },
+];
+
+<span class="cmt">// Export the type so page.tsx can use it too</span>
+<span class="kw">export type</span> <span class="typ">NavTab</span> <span class="op">=</span> <span class="str">'home'</span> <span class="op">|</span> <span class="str">'chat'</span> <span class="op">|</span> <span class="str">'history'</span> <span class="op">|</span> <span class="str">'profile'</span>;</pre>
+      </div>
+    </section>
+
+    <!-- EarliestFreePanel.tsx -->
+    <section class="section" id="freepanel">
+      <h3><span class="file-tag">EarliestFreePanel.tsx</span></h3>
+      <div class="card">
+        <p>The "Soonest Available" popup. When the sheet is open, it centers on screen. When the sheet is closed, it floats 90px above the nav bar. This replicates the original mockup's positioning behavior.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Position changes based on whether the sheet is open</span>
+<span class="kw">const</span> panelPosition <span class="op">=</span> sheetOpen
+  <span class="op">?</span> { top: <span class="str">'50%'</span>, transform: <span class="str">'translateY(-50%)'</span>, bottom: <span class="str">'auto'</span> }
+  <span class="op">:</span> { bottom: <span class="str">'90px'</span>, top: <span class="str">'auto'</span>, transform: <span class="str">'none'</span> };
+<span class="cmt">// top:50% + translateY(-50%) = classic CSS vertical centering trick</span>
+
+<span class="cmt">// Backdrop: invisible when closed, blocks clicks when open</span>
+<span class="tag">&lt;div</span>
+  <span class="attr">style</span>={{
+    opacity: open <span class="op">?</span> <span class="num">1</span> <span class="op">:</span> <span class="num">0</span>,
+    pointerEvents: open <span class="op">?</span> <span class="str">'all'</span> <span class="op">:</span> <span class="str">'none'</span>,
+  }}
+  <span class="attr">onClick</span>={onClose}
+<span class="tag">/&gt;</span>
+<span class="cmt">// pointerEvents:none = you can click through it even when it "exists"</span></pre>
+      </div>
+    </section>
+
+    <!-- OccupyModal.tsx -->
+    <section class="section" id="modal">
+      <h3><span class="file-tag">OccupyModal.tsx</span></h3>
+      <div class="card">
+        <p>The "Occupy Spot" modal with time inputs and quick-select buttons. Uses local state for the hours/minutes inputs — no other component needs to know what the user is typing, so it stays local.</p>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><div class="dot" style="background:#FF5F57"></div><div class="dot" style="background:#FEBC2E"></div><div class="dot" style="background:#28C840"></div></div>
+          <div class="lang">TSX</div>
+        </div>
+        <pre><span class="cmt">// Local state — only this modal cares about the time input values</span>
+<span class="kw">const</span> [hours, setHours] <span class="op">=</span> <span class="fn">useState</span>(<span class="str">''</span>);
+<span class="kw">const</span> [minutes, setMinutes] <span class="op">=</span> <span class="fn">useState</span>(<span class="str">''</span>);
+
+<span class="cmt">// Programmatically fill inputs from quick-select buttons</span>
+<span class="kw">const</span> <span class="fn">setTime</span> <span class="op">=</span> (h<span class="op">:</span> <span class="typ">number</span>, m<span class="op">:</span> <span class="typ">number</span>) <span class="op">=&gt;</span> {
+  <span class="fn">setHours</span>(h <span class="op">===</span> <span class="num">0</span> <span class="op">?</span> <span class="str">''</span> <span class="op">:</span> <span class="fn">String</span>(h)); <span class="cmt">// show placeholder if 0</span>
+  <span class="fn">setMinutes</span>(m <span class="op">===</span> <span class="num">0</span> <span class="op">?</span> <span class="str">'00'</span> <span class="op">:</span> <span class="fn">String</span>(m));
+};
+
+<span class="cmt">// Early return pattern — exit before doing anything if invalid</span>
+<span class="kw">const</span> <span class="fn">confirm</span> <span class="op">=</span> () <span class="op">=&gt;</span> {
+  <span class="kw">if</span> (<span class="op">!</span>hours <span class="op">&&</span> <span class="op">!</span>minutes) {
+    <span class="fn">alert</span>(<span class="str">'Please enter a charge time.'</span>);
+    <span class="kw">return</span>; <span class="cmt">// stops here — doesn't close the modal</span>
+  }
+  <span class="fn">onClose</span>();
+};
+
+<span class="cmt">// Reset inputs when modal closes (so next open starts fresh)</span>
+<span class="kw">const</span> <span class="fn">handleClose</span> <span class="op">=</span> () <span class="op">=&gt;</span> {
+  <span class="fn">setHours</span>(<span class="str">''</span>);
+  <span class="fn">setMinutes</span>(<span class="str">''</span>);
+  <span class="fn">onClose</span>();
+};</pre>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ═══════════════════════════ STATE FLOW ═══════════════════════════ -->
+    <section class="section" id="stateflow">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <h2>How State Flows Through the App</h2>
+      </div>
+
+      <div class="card">
+        <p>In React, state flows in <strong>one direction</strong> — downward from parent to child via props. When a child needs to update something in the parent, it calls a function that was passed down as a prop. This is called the <em>unidirectional data flow</em> principle.</p>
+      </div>
+
+      <div class="flow">
+        <div><span class="node-page">page.tsx</span> <span class="node-label">(owns ALL shared state)</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├──<span class="node-state"> sheetOpen</span> <span class="node-arrow">──────────────────→</span> <span class="node-comp">StationSheet</span> <span class="node-label">(controls visibility)</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├──<span class="node-state"> freePanelOpen</span> <span class="node-arrow">────────────────→</span> <span class="node-comp">EarliestFreePanel</span> <span class="node-label">(controls visibility)</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├──<span class="node-state"> occupyOpen + occupySpotId</span> <span class="node-arrow">──────→</span> <span class="node-comp">OccupyModal</span> <span class="node-label">(open + which spot)</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├──<span class="node-state"> activeTab</span> <span class="node-arrow">───────────────────────→</span> <span class="node-comp">BottomNav</span> <span class="node-label">(which tab is lit)</span></div>
+        <div>&nbsp;│</div>
+        <div>&nbsp;├──<span class="node-state"> overtimeOverlayOpen</span> <span class="node-arrow">──┐</span></div>
+        <div>&nbsp;│&nbsp;&nbsp;<span class="node-state"> overtimeResolved</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="node-arrow">├──→</span> <span class="node-comp">ChargingStationsCard</span> <span class="node-arrow">──→</span> <span class="node-comp">OvertimeCard (ctx="collapsed")</span></div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="node-state"> nudgeLeft</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="node-arrow">┘</span></div>
+        <div>&nbsp;│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="node-arrow">└──→</span> <span class="node-comp">StationSheet</span> <span class="node-arrow">──→</span> <span class="node-comp">OvertimeCard (ctx="sheet")</span></div>
+      </div>
+
+      <div class="callout callout-purple" style="margin-top:16px">
+        <div class="icon">🔑</div>
+        <p><strong>The key insight:</strong> <code>OvertimeCard</code> appears <em>twice</em> — once inside <code>ChargingStationsCard</code> and once inside <code>StationSheet</code>. Both instances share the same state from <code>page.tsx</code>. That's why nudging in the sheet also uses up a pip in the home card — they're looking at the same data.</p>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- ═══════════════════════════ CHEAT SHEET ═══════════════════════════ -->
+    <section class="section" id="cheatsheet">
+      <div class="section-header">
+        <div class="section-number">6</div>
+        <h2>Concepts Cheat Sheet — For Your Test</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concept</th>
+              <th>What It Is</th>
+              <th>When You Use It</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Component</td>
+              <td>A function that returns JSX</td>
+              <td>Every UI element</td>
+            </tr>
+            <tr>
+              <td>Props</td>
+              <td>Data passed into a component from its parent</td>
+              <td>When a parent needs to configure a child</td>
+            </tr>
+            <tr>
+              <td>useState</td>
+              <td>Data that changes over time — triggers re-render</td>
+              <td>Interactive UI: open/closed, counts, form inputs</td>
+            </tr>
+            <tr>
+              <td>useCallback</td>
+              <td>Memoizes a function so it isn't recreated every render</td>
+              <td>When passing functions as props to children</td>
+            </tr>
+            <tr>
+              <td>useRef</td>
+              <td>Holds a value that persists without triggering re-render</td>
+              <td>Timer IDs, DOM element references</td>
+            </tr>
+            <tr>
+              <td>'use client'</td>
+              <td>Marks a component as browser-only</td>
+              <td>Whenever you use hooks or event handlers</td>
+            </tr>
+            <tr>
+              <td>Lifting state up</td>
+              <td>Moving state to a common parent so siblings can share it</td>
+              <td>Two components need the same data</td>
+            </tr>
+            <tr>
+              <td>Prop drilling</td>
+              <td>Passing props through intermediary components</td>
+              <td>Small apps — acceptable; larger apps use Context</td>
+            </tr>
+            <tr>
+              <td>{condition && …}</td>
+              <td>Conditional rendering — shows element only if true</td>
+              <td>Showing/hiding UI based on state</td>
+            </tr>
+            <tr>
+              <td>.map() in JSX</td>
+              <td>Renders a list of elements from an array</td>
+              <td>Spot rows, nav tabs, quick-select buttons</td>
+            </tr>
+            <tr>
+              <td>key prop</td>
+              <td>Required on list items so React can track them</td>
+              <td>Always when using .map() in JSX</td>
+            </tr>
+            <tr>
+              <td>interface</td>
+              <td>Defines the shape of a TypeScript object</td>
+              <td>Props definitions, data models</td>
+            </tr>
+            <tr>
+              <td>'a' | 'b' | 'c'</td>
+              <td>Union type — value can only be one of these</td>
+              <td>Status fields, tab names, variant props</td>
+            </tr>
+            <tr>
+              <td>Early return</td>
+              <td>if (bad) return; — exit function before finishing</td>
+              <td>Form validation, guard clauses</td>
+            </tr>
+            <tr>
+              <td>@/ alias</td>
+              <td>Import alias for the project root</td>
+              <td>Cleaner imports: @/lib/data instead of ../../lib/data</td>
+            </tr>
+            <tr>
+              <td>e.stopPropagation()</td>
+              <td>Stops a click event from bubbling to parent elements</td>
+              <td>When nested clickable elements overlap</td>
+            </tr>
+            <tr>
+              <td>children prop</td>
+              <td>Special prop representing nested JSX content</td>
+              <td>Layout components (layout.tsx wrapping every page)</td>
+            </tr>
+            <tr>
+              <td>export default</td>
+              <td>The main thing a file exports (imported without braces)</td>
+              <td>Every component file has one</td>
+            </tr>
+            <tr>
+              <td>named export</td>
+              <td>Additional exports from a file (imported with braces)</td>
+              <td>Types, utility functions, constants</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="card" style="margin-top:40px; text-align:center; padding: 32px;">
+      <p style="font-size:13px; color: var(--subtle);">
+        Written specifically for the EV Parking app built in this project.<br>
+        All examples reference real files in the <code>ev-app/</code> codebase.
+      </p>
+    </div>
+
+  </main>
+
+  <script>
+    // Highlight active nav link on scroll
+    const sections = document.querySelectorAll('section[id], div.section[id]');
+    const links = document.querySelectorAll('.nav-link');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          links.forEach(l => l.classList.remove('active'));
+          const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>
