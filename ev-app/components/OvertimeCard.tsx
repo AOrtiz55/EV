@@ -80,7 +80,7 @@ export default function OvertimeCard({
 
   return (
     <div
-      className={`relative rounded-xl overflow-hidden transition-all duration-300 glass ${
+      className={`relative rounded-xl transition-all duration-300 glass ${
         !resolved ? 'overtime-card' : ''
       }`}
       style={rowBg}
@@ -160,7 +160,7 @@ export default function OvertimeCard({
       {/* Overlay */}
       {!resolved && (
         <div
-          className={`ot-overlay ${overlayOpen ? 'ot-visible' : 'ot-hidden'} absolute inset-0 rounded-xl`}
+          className={`ot-overlay ${overlayOpen ? 'ot-visible' : 'ot-hidden'} absolute top-0 left-0 right-0 rounded-xl`}
           style={{
             background: 'rgba(255,252,250,0.92)',
             backdropFilter: 'blur(16px)',
