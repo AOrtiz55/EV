@@ -124,7 +124,7 @@ export default function Home() {
 
         {/* Main content */}
         <div
-          className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-20"
+          className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-24"
           style={{ gap: '12px' }}
         >
           <MyStatsCard />
