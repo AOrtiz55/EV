@@ -8,6 +8,7 @@ interface OvertimeCardProps {
   ctx: string;
   variant: 'card' | 'sheet';
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
   // Shared state lifted up
   overlayOpen: boolean;
   onToggleOverlay: () => void;
@@ -24,6 +25,7 @@ export default function OvertimeCard({
   ctx,
   variant,
   onOccupy,
+  onReserve,
   overlayOpen,
   onToggleOverlay,
   resolved,
@@ -258,7 +260,7 @@ export default function OvertimeCard({
             {/* Reserve / Occupy */}
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onReserve(); }}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm glass-inner"
                 style={{ color: '#374151' }}
               >

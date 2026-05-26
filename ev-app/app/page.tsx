@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { SPOTS } from '@/lib/data';
 import type { Spot } from '@/lib/types';
 import Header from '@/components/Header';
@@ -35,6 +35,10 @@ export default function Home() {
   const [overtimeResolved, setOvertimeResolved] = useState(false);
   const [nudgeLeft, setNudgeLeft] = useState(3);
 
+  // Toast
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const openOccupy = useCallback((spotId: number) => {
     setOccupySpotId(spotId);
     setOccupyOpen(true);
@@ -55,6 +59,12 @@ export default function Home() {
           : spot
       )
     );
+  }, []);
+
+  const handleReserve = useCallback(() => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastVisible(true);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 2000);
   }, []);
 
   const toggleFreePanel = useCallback(() => {
@@ -124,6 +134,7 @@ export default function Home() {
             onOpenSheet={() => setSheetOpen(true)}
             onToggleFreePanel={toggleFreePanel}
             onOccupy={openOccupy}
+            onReserve={handleReserve}
             overtimeOverlayOpen={overtimeOverlayOpen}
             onToggleOvertimeOverlay={toggleOvertimeOverlay}
             overtimeResolved={overtimeResolved}
@@ -140,6 +151,7 @@ export default function Home() {
           onClose={() => setSheetOpen(false)}
           onToggleFreePanel={toggleFreePanel}
           onOccupy={openOccupy}
+          onReserve={handleReserve}
           overtimeOverlayOpen={overtimeOverlayOpen}
           onToggleOvertimeOverlay={toggleOvertimeOverlay}
           overtimeResolved={overtimeResolved}
@@ -156,6 +168,7 @@ export default function Home() {
           open={freePanelOpen}
           sheetOpen={sheetOpen}
           onClose={() => setFreePanelOpen(false)}
+          onReserve={handleReserve}
         />
 
         {/* Occupy modal */}
@@ -165,6 +178,25 @@ export default function Home() {
           onClose={closeOccupy}
           onConfirm={handleConfirmOccupy}
         />
+
+        {/* Toast */}
+        <div
+          className={`toast ${toastVisible ? 'toast-visible' : 'toast-hidden'} absolute bottom-24 left-1/2 z-[60]`}
+          style={{
+            background: 'rgba(26,29,35,0.92)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '999px',
+            fontSize: '12px',
+            fontWeight: '600',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+          }}
+        >
+          Reserve — coming soon
+        </div>
       </div>
     </div>
   );

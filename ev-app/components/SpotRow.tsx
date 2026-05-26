@@ -4,9 +4,10 @@ interface SpotRowProps {
   spot: Spot;
   variant: 'card' | 'sheet';
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
 }
 
-export default function SpotRow({ spot, variant, onOccupy }: SpotRowProps) {
+export default function SpotRow({ spot, variant, onOccupy, onReserve }: SpotRowProps) {
   const isAvailable = spot.status === 'available';
   const isInUse = spot.status === 'in-use';
 
@@ -91,6 +92,7 @@ export default function SpotRow({ spot, variant, onOccupy }: SpotRowProps) {
           {isAvailable ? (
             <>
               <button
+                onClick={onReserve}
                 className="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner"
                 style={{ color: '#374151' }}
               >

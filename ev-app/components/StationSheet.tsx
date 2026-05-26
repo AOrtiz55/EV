@@ -8,6 +8,7 @@ interface StationSheetProps {
   onClose: () => void;
   onToggleFreePanel: () => void;
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
   // Overtime shared state
   overtimeOverlayOpen: boolean;
   onToggleOvertimeOverlay: () => void;
@@ -23,6 +24,7 @@ export default function StationSheet({
   onClose,
   onToggleFreePanel,
   onOccupy,
+  onReserve,
   overtimeOverlayOpen,
   onToggleOvertimeOverlay,
   overtimeResolved,
@@ -93,7 +95,7 @@ export default function StationSheet({
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
         {spots.filter((s) => s.status === 'available').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} />
         ))}
 
         {overtimeSpot && (
@@ -102,6 +104,7 @@ export default function StationSheet({
             ctx="sheet"
             variant="sheet"
             onOccupy={onOccupy}
+            onReserve={onReserve}
             overlayOpen={overtimeOverlayOpen}
             onToggleOverlay={onToggleOvertimeOverlay}
             resolved={overtimeResolved}
@@ -112,7 +115,7 @@ export default function StationSheet({
         )}
 
         {spots.filter((s) => s.status === 'in-use').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} />
         ))}
       </div>
     </div>

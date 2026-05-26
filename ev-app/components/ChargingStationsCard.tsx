@@ -7,6 +7,7 @@ interface ChargingStationsCardProps {
   onOpenSheet: () => void;
   onToggleFreePanel: () => void;
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
   // Overtime shared state
   overtimeOverlayOpen: boolean;
   onToggleOvertimeOverlay: () => void;
@@ -21,6 +22,7 @@ export default function ChargingStationsCard({
   onOpenSheet,
   onToggleFreePanel,
   onOccupy,
+  onReserve,
   overtimeOverlayOpen,
   onToggleOvertimeOverlay,
   overtimeResolved,
@@ -90,7 +92,7 @@ export default function ChargingStationsCard({
         {/* Spot list */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
           {spots.filter((s) => s.status === 'available').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} />
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} />
           ))}
 
           {overtimeSpot && (
@@ -99,6 +101,7 @@ export default function ChargingStationsCard({
               ctx="collapsed"
               variant="card"
               onOccupy={onOccupy}
+              onReserve={onReserve}
               overlayOpen={overtimeOverlayOpen}
               onToggleOverlay={onToggleOvertimeOverlay}
               resolved={overtimeResolved}
@@ -109,7 +112,7 @@ export default function ChargingStationsCard({
           )}
 
           {spots.filter((s) => s.status === 'in-use').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} />
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} />
           ))}
         </div>
       </div>
