@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { SPOTS } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 import Header from '@/components/Header';
 import MyStatsCard from '@/components/MyStatsCard';
 import ChargingStationsCard from '@/components/ChargingStationsCard';
@@ -9,10 +11,20 @@ import BottomNav, { NavTab } from '@/components/BottomNav';
 import EarliestFreePanel from '@/components/EarliestFreePanel';
 import OccupyModal from '@/components/OccupyModal';
 
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 export default function Home() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [freePanelOpen, setFreePanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
+
+  const [spots, setSpots] = useState<Spot[]>(SPOTS);
 
   // Occupy modal
   const [occupyOpen, setOccupyOpen] = useState(false);
@@ -30,6 +42,19 @@ export default function Home() {
 
   const closeOccupy = useCallback(() => {
     setOccupyOpen(false);
+  }, []);
+
+  const handleConfirmOccupy = useCallback((spotId: number, hours: number, minutes: number) => {
+    const now = new Date();
+    const end = new Date(now.getTime() + (hours * 60 + minutes) * 60 * 1000);
+    const timeToFull = hours > 0 ? `${hours}h ${String(minutes).padStart(2, '0')}m` : `${minutes} min`;
+    setSpots((prev) =>
+      prev.map((spot) =>
+        spot.id === spotId
+          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull }
+          : spot
+      )
+    );
   }, []);
 
   const toggleFreePanel = useCallback(() => {
@@ -95,6 +120,7 @@ export default function Home() {
           <MyStatsCard />
 
           <ChargingStationsCard
+            spots={spots}
             onOpenSheet={() => setSheetOpen(true)}
             onToggleFreePanel={toggleFreePanel}
             onOccupy={openOccupy}
@@ -109,6 +135,7 @@ export default function Home() {
 
         {/* Full-screen sheet */}
         <StationSheet
+          spots={spots}
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onToggleFreePanel={toggleFreePanel}
@@ -136,6 +163,7 @@ export default function Home() {
           open={occupyOpen}
           spotId={occupySpotId}
           onClose={closeOccupy}
+          onConfirm={handleConfirmOccupy}
         />
       </div>
     </div>

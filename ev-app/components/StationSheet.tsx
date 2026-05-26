@@ -1,8 +1,9 @@
-import { SPOTS } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 import SpotRow from './SpotRow';
 import OvertimeCard from './OvertimeCard';
 
 interface StationSheetProps {
+  spots: Spot[];
   open: boolean;
   onClose: () => void;
   onToggleFreePanel: () => void;
@@ -16,10 +17,8 @@ interface StationSheetProps {
   onNudgeLeftChange: (n: number) => void;
 }
 
-const available = SPOTS.filter((s) => s.status === 'available').length;
-const inUse = SPOTS.filter((s) => s.status === 'in-use').length;
-
 export default function StationSheet({
+  spots,
   open,
   onClose,
   onToggleFreePanel,
@@ -31,7 +30,9 @@ export default function StationSheet({
   nudgeLeft,
   onNudgeLeftChange,
 }: StationSheetProps) {
-  const overtimeSpot = SPOTS.find((s) => s.status === 'overtime')!;
+  const available    = spots.filter((s) => s.status === 'available').length;
+  const inUse        = spots.filter((s) => s.status === 'in-use').length;
+  const overtimeSpot = spots.find((s) => s.status === 'overtime');
 
   return (
     <div
@@ -91,25 +92,26 @@ export default function StationSheet({
 
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
-        {SPOTS.filter((s) => s.status === 'available').map((spot) => (
+        {spots.filter((s) => s.status === 'available').map((spot) => (
           <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
         ))}
 
-        {/* Overtime spot */}
-        <OvertimeCard
-          spot={overtimeSpot}
-          ctx="sheet"
-          variant="sheet"
-          onOccupy={onOccupy}
-          overlayOpen={overtimeOverlayOpen}
-          onToggleOverlay={onToggleOvertimeOverlay}
-          resolved={overtimeResolved}
-          onResolve={onOvertimeResolve}
-          nudgeLeft={nudgeLeft}
-          onNudgeLeftChange={onNudgeLeftChange}
-        />
+        {overtimeSpot && (
+          <OvertimeCard
+            spot={overtimeSpot}
+            ctx="sheet"
+            variant="sheet"
+            onOccupy={onOccupy}
+            overlayOpen={overtimeOverlayOpen}
+            onToggleOverlay={onToggleOvertimeOverlay}
+            resolved={overtimeResolved}
+            onResolve={onOvertimeResolve}
+            nudgeLeft={nudgeLeft}
+            onNudgeLeftChange={onNudgeLeftChange}
+          />
+        )}
 
-        {SPOTS.filter((s) => s.status === 'in-use').map((spot) => (
+        {spots.filter((s) => s.status === 'in-use').map((spot) => (
           <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
         ))}
       </div>

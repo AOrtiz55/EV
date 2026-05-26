@@ -6,6 +6,7 @@ interface OccupyModalProps {
   open: boolean;
   spotId: number | null;
   onClose: () => void;
+  onConfirm: (spotId: number, hours: number, minutes: number) => void;
 }
 
 const QUICK_TIMES = [
@@ -15,7 +16,7 @@ const QUICK_TIMES = [
   { label: '4 hr', h: 4, m: 0 },
 ];
 
-export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps) {
+export default function OccupyModal({ open, spotId, onClose, onConfirm }: OccupyModalProps) {
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
 
@@ -28,6 +29,9 @@ export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps)
     if (!hours && !minutes) {
       alert('Please enter a charge time.');
       return;
+    }
+    if (spotId !== null) {
+      onConfirm(spotId, parseInt(hours) || 0, parseInt(minutes) || 0);
     }
     onClose();
   };
