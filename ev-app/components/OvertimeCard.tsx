@@ -142,13 +142,17 @@ export default function OvertimeCard({
               </span>
             </div>
           </div>
-          <div className="flex flex-col gap-1.5 flex-shrink-0 opacity-25">
-            <div className="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner" style={{ color: '#374151' }}>
+          <div className="flex flex-col gap-1.5 flex-shrink-0">
+            <div className="text-[10px] font-bold px-2.5 py-1 rounded-lg glass-inner opacity-25" style={{ color: '#374151' }}>
               Reserve
             </div>
-            <div className="text-[10px] font-bold px-2.5 py-1 rounded-lg" style={{ background: '#1A1D23', color: '#fff' }}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleOverlay(); }}
+              className="text-[10px] font-bold px-2.5 py-1 rounded-lg"
+              style={{ background: '#1A1D23', color: '#fff' }}
+            >
               Occupy
-            </div>
+            </button>
           </div>
         </div>
       </div>
