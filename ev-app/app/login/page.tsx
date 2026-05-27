@@ -44,9 +44,9 @@ export default function LoginPage() {
         className="w-full max-w-sm p-6"
         style={{
           background: '#ffffff',
-          border: '1px solid rgba(0,0,0,0.18)',
-          borderRadius: '20px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+          border: '1.5px solid #d1d5db',
+          borderRadius: '24px',
+          boxShadow: 'none',
         }}
       >
         <h2 className="font-bold text-xl mb-1" style={{ color: '#1A1D23' }}>Sign in</h2>
