@@ -176,12 +176,23 @@ export default function OvertimeCard({
             className="flex items-start justify-between px-4 pt-4 pb-3"
             style={{ borderBottom: '1px solid rgba(234,88,12,0.12)' }}
           >
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-lg">⏱</span>
-                <p className="font-bold text-base" style={{ color: '#1A1D23' }}>Still there?</p>
+            <div className="flex items-start gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleOverlay(); }}
+                className="flex items-center px-2 py-1.5 rounded-lg flex-shrink-0 mt-0.5"
+                style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', color: '#9CA3AF' }}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-lg">⏱</span>
+                  <p className="font-bold text-base" style={{ color: '#1A1D23' }}>Still there?</p>
+                </div>
+                <p className="text-xs" style={{ color: '#6B7280' }}>{spot.occupant} hasn&apos;t confirmed</p>
               </div>
-              <p className="text-xs" style={{ color: '#6B7280' }}>{spot.occupant} hasn&apos;t confirmed</p>
             </div>
             <button
               onClick={handleResolve}
