@@ -80,6 +80,13 @@ export default function Home() {
   const resolveOvertime = useCallback(() => {
     setOvertimeResolved(true);
     setOvertimeOverlayOpen(false);
+    setSpots((prev) =>
+      prev.map((spot) =>
+        spot.status === 'overtime'
+          ? { ...spot, status: 'available' as const, occupant: undefined, startTime: undefined, overtimeMinutes: undefined }
+          : spot
+      )
+    );
   }, []);
 
   return (
