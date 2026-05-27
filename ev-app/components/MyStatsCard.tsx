@@ -11,21 +11,29 @@ interface MyStatsCardProps {
 export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
   const isActive = activeSpot !== null;
   const [chargePercent, setChargePercent] = useState(0);
+  const [remain, setRemain] = useState('--');
 
   useEffect(() => {
-    if (!activeSpot?.startMs || !activeSpot?.stopMs) {
+    if (!activeSpot?.stopTimeRaw || !activeSpot?.startTimeRaw) {
+      setRemain('--');
       setChargePercent(0);
       return;
     }
-    const calc = () => {
-      const totalMs = activeSpot.stopMs! - activeSpot.startMs!;
-      const elapsedMs = Date.now() - activeSpot.startMs!;
-      setChargePercent(Math.min(100, Math.round((elapsedMs / totalMs) * 100)));
+    const tick = () => {
+      const now = new Date();
+      const totalMs = activeSpot.stopTimeRaw!.getTime() - activeSpot.startTimeRaw!.getTime();
+      const remainMs = Math.max(0, activeSpot.stopTimeRaw!.getTime() - now.getTime());
+      const elapsedMs = totalMs - remainMs;
+      const remainHrs = Math.floor(remainMs / 3600000);
+      const remainMins = Math.floor((remainMs % 3600000) / 60000);
+      const pct = Math.min(100, Math.round((elapsedMs / totalMs) * 100));
+      setRemain(remainHrs + 'h ' + String(remainMins).padStart(2, '0') + 'm');
+      setChargePercent(pct);
     };
-    calc();
-    const id = setInterval(calc, 30_000);
+    tick();
+    const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
-  }, [activeSpot?.startMs, activeSpot?.stopMs]);
+  }, [activeSpot]);
 
   return (
     <div className="flex-shrink-0">
@@ -86,7 +94,7 @@ export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
           {[
             { label: 'Start',  value: isActive ? activeSpot.startTime  : '--' },
             { label: 'Stop',   value: isActive ? activeSpot.stopTime   : '--' },
-            { label: 'Remain', value: isActive ? activeSpot.timeToFull : '--' },
+            { label: 'Remain', value: remain },
           ].map(({ label, value }) => (
             <div key={label} className="glass-inner rounded-xl p-2 text-center">
               <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: '#9CA3AF' }}>

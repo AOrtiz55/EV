@@ -11,6 +11,8 @@ export interface Spot {
   consumption?: string;
   startMs?: number;
   stopMs?: number;
+  startTimeRaw?: Date;
+  stopTimeRaw?: Date;
 }
 
 export interface NudgeState {

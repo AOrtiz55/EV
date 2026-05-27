@@ -59,7 +59,7 @@ export default function Home() {
     setSpots((prev) =>
       prev.map((spot) =>
         spot.id === spotId
-          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime() }
+          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime(), startTimeRaw: now, stopTimeRaw: end }
           : spot
       )
     );
