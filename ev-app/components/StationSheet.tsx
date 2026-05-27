@@ -4,6 +4,7 @@ import OvertimeCard from './OvertimeCard';
 
 interface StationSheetProps {
   spots: Spot[];
+  hasActiveSession: boolean;
   open: boolean;
   onClose: () => void;
   onToggleFreePanel: () => void;
@@ -20,6 +21,7 @@ interface StationSheetProps {
 
 export default function StationSheet({
   spots,
+  hasActiveSession,
   open,
   onClose,
   onToggleFreePanel,
@@ -95,7 +97,7 @@ export default function StationSheet({
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
         {spots.filter((s) => s.status === 'available').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} />
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} />
         ))}
 
         {overtimeSpot && (

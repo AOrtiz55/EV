@@ -4,6 +4,7 @@ import OvertimeCard from './OvertimeCard';
 
 interface ChargingStationsCardProps {
   spots: Spot[];
+  hasActiveSession: boolean;
   onOpenSheet: () => void;
   onToggleFreePanel: () => void;
   onOccupy: (spotId: number) => void;
@@ -19,6 +20,7 @@ interface ChargingStationsCardProps {
 
 export default function ChargingStationsCard({
   spots,
+  hasActiveSession,
   onOpenSheet,
   onToggleFreePanel,
   onOccupy,
@@ -92,7 +94,7 @@ export default function ChargingStationsCard({
         {/* Spot list */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
           {spots.filter((s) => s.status === 'available').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} />
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} />
           ))}
 
           {overtimeSpot && (

@@ -5,9 +5,10 @@ interface SpotRowProps {
   variant: 'card' | 'sheet';
   onOccupy: (spotId: number) => void;
   onReserve: () => void;
+  disabled?: boolean;
 }
 
-export default function SpotRow({ spot, variant, onOccupy, onReserve }: SpotRowProps) {
+export default function SpotRow({ spot, variant, onOccupy, onReserve, disabled = false }: SpotRowProps) {
   const isAvailable = spot.status === 'available';
   const isInUse = spot.status === 'in-use';
 
@@ -100,7 +101,8 @@ export default function SpotRow({ spot, variant, onOccupy, onReserve }: SpotRowP
               </button>
               <button
                 onClick={() => onOccupy(spot.id)}
-                className="text-[10px] font-bold px-2.5 py-1 rounded-lg"
+                disabled={disabled}
+                className={`text-[10px] font-bold px-2.5 py-1 rounded-lg${disabled ? ' opacity-40' : ''}`}
                 style={{ background: '#1A1D23', color: '#fff' }}
               >
                 Occupy

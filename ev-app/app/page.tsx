@@ -25,6 +25,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
 
   const [spots, setSpots] = useState<Spot[]>(SPOTS);
+  const hasActiveSession = spots.some((s) => s.occupant === 'You' && s.status === 'in-use');
 
   // Occupy modal
   const [occupyOpen, setOccupyOpen] = useState(false);
@@ -131,6 +132,7 @@ export default function Home() {
 
           <ChargingStationsCard
             spots={spots}
+            hasActiveSession={hasActiveSession}
             onOpenSheet={() => setSheetOpen(true)}
             onToggleFreePanel={toggleFreePanel}
             onOccupy={openOccupy}
@@ -147,6 +149,7 @@ export default function Home() {
         {/* Full-screen sheet */}
         <StationSheet
           spots={spots}
+          hasActiveSession={hasActiveSession}
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onToggleFreePanel={toggleFreePanel}
