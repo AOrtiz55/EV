@@ -107,6 +107,7 @@ export default function StationSheet({
             variant="sheet"
             onOccupy={onOccupy}
             onReserve={onReserve}
+            disabled={hasActiveSession}
             overlayOpen={overtimeOverlayOpen}
             onToggleOverlay={onToggleOvertimeOverlay}
             resolved={overtimeResolved}

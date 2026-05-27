@@ -9,6 +9,7 @@ interface OvertimeCardProps {
   variant: 'card' | 'sheet';
   onOccupy: (spotId: number) => void;
   onReserve: () => void;
+  disabled?: boolean;
   // Shared state lifted up
   overlayOpen: boolean;
   onToggleOverlay: () => void;
@@ -26,6 +27,7 @@ export default function OvertimeCard({
   variant,
   onOccupy,
   onReserve,
+  disabled = false,
   overlayOpen,
   onToggleOverlay,
   resolved,
@@ -268,7 +270,8 @@ export default function OvertimeCard({
               </button>
               <button
                 onClick={() => onOccupy(spot.id)}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm"
+                disabled={disabled}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm${disabled ? ' opacity-40' : ''}`}
                 style={{ background: '#1A1D23', color: '#fff' }}
               >
                 ⚡ Occupy

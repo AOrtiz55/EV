@@ -104,6 +104,7 @@ export default function ChargingStationsCard({
               variant="card"
               onOccupy={onOccupy}
               onReserve={onReserve}
+              disabled={hasActiveSession}
               overlayOpen={overtimeOverlayOpen}
               onToggleOverlay={onToggleOvertimeOverlay}
               resolved={overtimeResolved}
