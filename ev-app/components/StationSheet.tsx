@@ -97,7 +97,7 @@ export default function StationSheet({
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
         {spots.filter((s) => s.status === 'available').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} />
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} isOwned={spot.occupant === 'You'} />
         ))}
 
         {overtimeSpot && (
@@ -118,7 +118,7 @@ export default function StationSheet({
         )}
 
         {spots.filter((s) => s.status === 'in-use').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} />
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} isOwned={spot.occupant === 'You'} />
         ))}
       </div>
     </div>
