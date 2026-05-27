@@ -4,9 +4,10 @@ interface EarliestFreePanelProps {
   open: boolean;
   sheetOpen: boolean;
   onClose: () => void;
+  onReserve: () => void;
 }
 
-export default function EarliestFreePanel({ open, sheetOpen, onClose }: EarliestFreePanelProps) {
+export default function EarliestFreePanel({ open, sheetOpen, onClose, onReserve }: EarliestFreePanelProps) {
   const panelPosition = sheetOpen
     ? { top: '50%', transform: 'translateY(-50%)', bottom: 'auto' }
     : { bottom: '90px', top: 'auto', transform: 'none' };
@@ -77,6 +78,7 @@ export default function EarliestFreePanel({ open, sheetOpen, onClose }: Earliest
                 </div>
               </div>
               <button
+                onClick={onReserve}
                 className="text-[11px] font-bold px-3 py-1.5 rounded-lg glass-inner"
                 style={{ color: '#374151' }}
               >

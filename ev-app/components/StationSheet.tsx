@@ -1,12 +1,15 @@
-import { SPOTS } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 import SpotRow from './SpotRow';
 import OvertimeCard from './OvertimeCard';
 
 interface StationSheetProps {
+  spots: Spot[];
+  hasActiveSession: boolean;
   open: boolean;
   onClose: () => void;
   onToggleFreePanel: () => void;
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
   // Overtime shared state
   overtimeOverlayOpen: boolean;
   onToggleOvertimeOverlay: () => void;
@@ -16,14 +19,14 @@ interface StationSheetProps {
   onNudgeLeftChange: (n: number) => void;
 }
 
-const available = SPOTS.filter((s) => s.status === 'available').length;
-const inUse = SPOTS.filter((s) => s.status === 'in-use').length;
-
 export default function StationSheet({
+  spots,
+  hasActiveSession,
   open,
   onClose,
   onToggleFreePanel,
   onOccupy,
+  onReserve,
   overtimeOverlayOpen,
   onToggleOvertimeOverlay,
   overtimeResolved,
@@ -31,7 +34,9 @@ export default function StationSheet({
   nudgeLeft,
   onNudgeLeftChange,
 }: StationSheetProps) {
-  const overtimeSpot = SPOTS.find((s) => s.status === 'overtime')!;
+  const available    = spots.filter((s) => s.status === 'available').length;
+  const inUse        = spots.filter((s) => s.status === 'in-use').length;
+  const overtimeSpot = spots.find((s) => s.status === 'overtime');
 
   return (
     <div
@@ -91,26 +96,29 @@ export default function StationSheet({
 
       {/* Scrollable list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 pb-24">
-        {SPOTS.filter((s) => s.status === 'available').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
+        {spots.filter((s) => s.status === 'available').map((spot) => (
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} isOwned={spot.occupant === 'You'} />
         ))}
 
-        {/* Overtime spot */}
-        <OvertimeCard
-          spot={overtimeSpot}
-          ctx="sheet"
-          variant="sheet"
-          onOccupy={onOccupy}
-          overlayOpen={overtimeOverlayOpen}
-          onToggleOverlay={onToggleOvertimeOverlay}
-          resolved={overtimeResolved}
-          onResolve={onOvertimeResolve}
-          nudgeLeft={nudgeLeft}
-          onNudgeLeftChange={onNudgeLeftChange}
-        />
+        {overtimeSpot && (
+          <OvertimeCard
+            spot={overtimeSpot}
+            ctx="sheet"
+            variant="sheet"
+            onOccupy={onOccupy}
+            onReserve={onReserve}
+            disabled={hasActiveSession}
+            overlayOpen={overtimeOverlayOpen}
+            onToggleOverlay={onToggleOvertimeOverlay}
+            resolved={overtimeResolved}
+            onResolve={onOvertimeResolve}
+            nudgeLeft={nudgeLeft}
+            onNudgeLeftChange={onNudgeLeftChange}
+          />
+        )}
 
-        {SPOTS.filter((s) => s.status === 'in-use').map((spot) => (
-          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} />
+        {spots.filter((s) => s.status === 'in-use').map((spot) => (
+          <SpotRow key={spot.id} spot={spot} variant="sheet" onOccupy={onOccupy} onReserve={onReserve} isOwned={spot.occupant === 'You'} />
         ))}
       </div>
     </div>

@@ -6,6 +6,7 @@ interface OccupyModalProps {
   open: boolean;
   spotId: number | null;
   onClose: () => void;
+  onConfirm: (spotId: number, hours: number, minutes: number) => void;
 }
 
 const QUICK_TIMES = [
@@ -15,7 +16,7 @@ const QUICK_TIMES = [
   { label: '4 hr', h: 4, m: 0 },
 ];
 
-export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps) {
+export default function OccupyModal({ open, spotId, onClose, onConfirm }: OccupyModalProps) {
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
 
@@ -28,6 +29,9 @@ export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps)
     if (!hours && !minutes) {
       alert('Please enter a charge time.');
       return;
+    }
+    if (spotId !== null) {
+      onConfirm(spotId, parseInt(hours) || 0, parseInt(minutes) || 0);
     }
     onClose();
   };
@@ -42,8 +46,9 @@ export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps)
     <>
       {/* Backdrop */}
       <div
-        className="absolute inset-0 z-40 transition-opacity duration-200"
+        className="fixed inset-0 transition-opacity duration-200"
         style={{
+          zIndex: 500,
           background: 'rgba(0,0,0,0.28)',
           backdropFilter: open ? 'blur(6px)' : 'none',
           opacity: open ? 1 : 0,
@@ -54,8 +59,9 @@ export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps)
 
       {/* Modal */}
       <div
-        className={`occupy-modal ${open ? 'occupy-visible' : 'occupy-hidden'} absolute left-4 right-4 z-50 rounded-2xl p-5`}
+        className={`occupy-modal ${open ? 'occupy-visible' : 'occupy-hidden'} fixed left-4 right-4 rounded-2xl p-5`}
         style={{
+          zIndex: 501,
           top: '50%',
           background: 'rgba(255,255,255,0.88)',
           backdropFilter: 'blur(32px)',
@@ -75,9 +81,10 @@ export default function OccupyModal({ open, spotId, onClose }: OccupyModalProps)
           </div>
           <button
             onClick={handleClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center glass-inner"
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.07)', border: '1px solid rgba(0,0,0,0.1)' }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="#9CA3AF" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="#6B7280" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

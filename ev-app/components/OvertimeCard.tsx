@@ -8,6 +8,8 @@ interface OvertimeCardProps {
   ctx: string;
   variant: 'card' | 'sheet';
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
+  disabled?: boolean;
   // Shared state lifted up
   overlayOpen: boolean;
   onToggleOverlay: () => void;
@@ -24,6 +26,8 @@ export default function OvertimeCard({
   ctx,
   variant,
   onOccupy,
+  onReserve,
+  disabled = false,
   overlayOpen,
   onToggleOverlay,
   resolved,
@@ -172,12 +176,23 @@ export default function OvertimeCard({
             className="flex items-start justify-between px-4 pt-4 pb-3"
             style={{ borderBottom: '1px solid rgba(234,88,12,0.12)' }}
           >
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-lg">⏱</span>
-                <p className="font-bold text-base" style={{ color: '#1A1D23' }}>Still there?</p>
+            <div className="flex items-start gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); onToggleOverlay(); }}
+                className="flex items-center px-2 py-1.5 rounded-lg flex-shrink-0 mt-0.5"
+                style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.1)', color: '#9CA3AF' }}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-lg">⏱</span>
+                  <p className="font-bold text-base" style={{ color: '#1A1D23' }}>Still there?</p>
+                </div>
+                <p className="text-xs" style={{ color: '#6B7280' }}>{spot.occupant} hasn&apos;t confirmed</p>
               </div>
-              <p className="text-xs" style={{ color: '#6B7280' }}>{spot.occupant} hasn&apos;t confirmed</p>
             </div>
             <button
               onClick={handleResolve}
@@ -258,7 +273,7 @@ export default function OvertimeCard({
             {/* Reserve / Occupy */}
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onReserve(); }}
                 className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm glass-inner"
                 style={{ color: '#374151' }}
               >
@@ -266,7 +281,8 @@ export default function OvertimeCard({
               </button>
               <button
                 onClick={() => onOccupy(spot.id)}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm"
+                disabled={disabled && !resolved}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm${disabled && !resolved ? ' opacity-40' : ''}`}
                 style={{ background: '#1A1D23', color: '#fff' }}
               >
                 ⚡ Occupy

@@ -1,11 +1,14 @@
-import { SPOTS } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 import SpotRow from './SpotRow';
 import OvertimeCard from './OvertimeCard';
 
 interface ChargingStationsCardProps {
+  spots: Spot[];
+  hasActiveSession: boolean;
   onOpenSheet: () => void;
   onToggleFreePanel: () => void;
   onOccupy: (spotId: number) => void;
+  onReserve: () => void;
   // Overtime shared state
   overtimeOverlayOpen: boolean;
   onToggleOvertimeOverlay: () => void;
@@ -15,13 +18,13 @@ interface ChargingStationsCardProps {
   onNudgeLeftChange: (n: number) => void;
 }
 
-const available = SPOTS.filter((s) => s.status === 'available').length;
-const inUse = SPOTS.filter((s) => s.status === 'in-use').length;
-
 export default function ChargingStationsCard({
+  spots,
+  hasActiveSession,
   onOpenSheet,
   onToggleFreePanel,
   onOccupy,
+  onReserve,
   overtimeOverlayOpen,
   onToggleOvertimeOverlay,
   overtimeResolved,
@@ -29,7 +32,9 @@ export default function ChargingStationsCard({
   nudgeLeft,
   onNudgeLeftChange,
 }: ChargingStationsCardProps) {
-  const overtimeSpot = SPOTS.find((s) => s.status === 'overtime')!;
+  const available    = spots.filter((s) => s.status === 'available').length;
+  const inUse        = spots.filter((s) => s.status === 'in-use').length;
+  const overtimeSpot = spots.find((s) => s.status === 'overtime');
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -88,26 +93,29 @@ export default function ChargingStationsCard({
 
         {/* Spot list */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
-          {SPOTS.filter((s) => s.status === 'available').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} />
+          {spots.filter((s) => s.status === 'available').map((spot) => (
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} isOwned={spot.occupant === 'You'} />
           ))}
 
-          {/* Overtime spot */}
-          <OvertimeCard
-            spot={overtimeSpot}
-            ctx="collapsed"
-            variant="card"
-            onOccupy={onOccupy}
-            overlayOpen={overtimeOverlayOpen}
-            onToggleOverlay={onToggleOvertimeOverlay}
-            resolved={overtimeResolved}
-            onResolve={onOvertimeResolve}
-            nudgeLeft={nudgeLeft}
-            onNudgeLeftChange={onNudgeLeftChange}
-          />
+          {overtimeSpot && (
+            <OvertimeCard
+              spot={overtimeSpot}
+              ctx="collapsed"
+              variant="card"
+              onOccupy={onOccupy}
+              onReserve={onReserve}
+              disabled={hasActiveSession}
+              overlayOpen={overtimeOverlayOpen}
+              onToggleOverlay={onToggleOvertimeOverlay}
+              resolved={overtimeResolved}
+              onResolve={onOvertimeResolve}
+              nudgeLeft={nudgeLeft}
+              onNudgeLeftChange={onNudgeLeftChange}
+            />
+          )}
 
-          {SPOTS.filter((s) => s.status === 'in-use').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} />
+          {spots.filter((s) => s.status === 'in-use').map((spot) => (
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} isOwned={spot.occupant === 'You'} />
           ))}
         </div>
       </div>

@@ -1,143 +1,224 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import Header from '@/components/Header';
-import MyStatsCard from '@/components/MyStatsCard';
-import ChargingStationsCard from '@/components/ChargingStationsCard';
-import StationSheet from '@/components/StationSheet';
-import BottomNav, { NavTab } from '@/components/BottomNav';
-import EarliestFreePanel from '@/components/EarliestFreePanel';
+import { useState, useCallback, useEffect } from 'react';
+import { initialSpots, initialSession, activityItems } from '@/lib/data';
+import type { Spot, ActiveSession } from '@/lib/data';
+
+import Sidebar from '@/components/Sidebar';
+import MobileNav from '@/components/MobileNav';
+import Topbar from '@/components/Topbar';
+import StatsCards from '@/components/StatsCards';
+import MySession from '@/components/MySession';
+import Overview from '@/components/Overview';
+import RecentActivity from '@/components/RecentActivity';
+import SpotRow from '@/components/SpotRow';
+import OvertimeCard from '@/components/OvertimeCard';
 import OccupyModal from '@/components/OccupyModal';
+import StopModal from '@/components/StopModal';
 
 export default function Home() {
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [freePanelOpen, setFreePanelOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<NavTab>('home');
-
-  // Occupy modal
-  const [occupyOpen, setOccupyOpen] = useState(false);
+  const [spots, setSpots] = useState<Spot[]>(initialSpots);
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(initialSession);
   const [occupySpotId, setOccupySpotId] = useState<number | null>(null);
+  const [showStopModal, setShowStopModal] = useState(false);
+  const [reservedSpots, setReservedSpots] = useState<Set<number>>(new Set());
+  const [toast, setToast] = useState<string | null>(null);
 
-  // Overtime shared state (synced between home card and sheet)
+  // Overtime lifted state
   const [overtimeOverlayOpen, setOvertimeOverlayOpen] = useState(false);
   const [overtimeResolved, setOvertimeResolved] = useState(false);
   const [nudgeLeft, setNudgeLeft] = useState(3);
 
-  const openOccupy = useCallback((spotId: number) => {
+  // Derived state
+  const availableCount = spots.filter((s) => s.status === 'available').length;
+  const inUseCount = spots.filter((s) => s.status === 'in-use' || s.status === 'overtime').length;
+  const earliestFree = spots
+    .filter((s) => s.minutesRemaining != null)
+    .sort((a, b) => (a.minutesRemaining ?? 999) - (b.minutesRemaining ?? 999))[0];
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+  }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const handleOccupyById = useCallback((spotId: number) => {
     setOccupySpotId(spotId);
-    setOccupyOpen(true);
   }, []);
 
-  const closeOccupy = useCallback(() => {
-    setOccupyOpen(false);
+  const handleOccupyConfirm = useCallback((spotId: number, hours: number, minutes: number) => {
+    const totalMinutes = hours * 60 + minutes;
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + totalMinutes);
+    const occupiedUntil = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    setSpots((prev) =>
+      prev.map((s) =>
+        s.id === spotId
+          ? { ...s, status: 'in-use', occupiedUntil, minutesRemaining: totalMinutes }
+          : s
+      )
+    );
+    setOccupySpotId(null);
   }, []);
 
-  const toggleFreePanel = useCallback(() => {
-    setFreePanelOpen((v) => !v);
+  const handleStopConfirm = useCallback(() => {
+    setActiveSession(null);
+    setSpots((prev) =>
+      prev.map((s) =>
+        s.id === 1
+          ? { ...s, status: 'available', minutesRemaining: undefined, occupiedUntil: undefined, isCurrentUser: false }
+          : s
+      )
+    );
+    setShowStopModal(false);
   }, []);
 
-  const toggleOvertimeOverlay = useCallback(() => {
-    if (overtimeResolved) return;
-    setOvertimeOverlayOpen((v) => !v);
-  }, [overtimeResolved]);
+  const handleReserveToggle = useCallback((spotId: number) => {
+    setReservedSpots((prev) => {
+      const next = new Set(prev);
+      if (next.has(spotId)) {
+        next.delete(spotId);
+      } else {
+        next.add(spotId);
+      }
+      return next;
+    });
+    showToast(`Spot #${spotId} ${reservedSpots.has(spotId) ? 'unreserved' : 'reserved'}`);
+  }, [reservedSpots, showToast]);
 
-  const resolveOvertime = useCallback(() => {
-    setOvertimeResolved(true);
-    setOvertimeOverlayOpen(false);
-  }, []);
+  const availableSpots = spots.filter((s) => s.status === 'available');
+  const overtimeSpots  = spots.filter((s) => s.status === 'overtime');
+  const inUseSpots     = spots.filter((s) => s.status === 'in-use');
 
   return (
-    <div className="flex justify-center items-start" style={{ height: '100dvh', background: '#D8DADF' }}>
-      {/* Ambient blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-        <div
-          style={{
-            position: 'absolute',
-            top: '-80px',
-            left: '-60px',
-            width: '380px',
-            height: '380px',
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.35)',
-            filter: 'blur(60px)',
-          }}
+    <>
+      {/* Modals — outside layout flow */}
+      <OccupyModal
+        open={occupySpotId !== null}
+        spotId={occupySpotId}
+        onConfirm={handleOccupyConfirm}
+        onClose={() => setOccupySpotId(null)}
+      />
+      {showStopModal && (
+        <StopModal
+          session={activeSession}
+          onConfirm={handleStopConfirm}
+          onClose={() => setShowStopModal(false)}
         />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '60px',
-            right: '-80px',
-            width: '320px',
-            height: '320px',
-            borderRadius: '50%',
-            background: 'rgba(200,205,215,0.4)',
-            filter: 'blur(70px)',
-          }}
-        />
-      </div>
+      )}
 
-      {/* App shell */}
-      <div
-        className="relative w-full max-w-[390px] flex flex-col overflow-hidden shadow-2xl"
-        style={{
-          background: 'linear-gradient(160deg,#E8EAEE 0%,#D8DADF 100%)',
-          height: '100dvh',
-          zIndex: 1,
-        }}
-      >
-        <Header />
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
 
-        {/* Main content */}
-        <div
-          className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-20"
-          style={{ gap: '12px' }}
-        >
-          <MyStatsCard />
+      {/* Sidebar */}
+      <Sidebar />
 
-          <ChargingStationsCard
-            onOpenSheet={() => setSheetOpen(true)}
-            onToggleFreePanel={toggleFreePanel}
-            onOccupy={openOccupy}
-            overtimeOverlayOpen={overtimeOverlayOpen}
-            onToggleOvertimeOverlay={toggleOvertimeOverlay}
-            overtimeResolved={overtimeResolved}
-            onOvertimeResolve={resolveOvertime}
-            nudgeLeft={nudgeLeft}
-            onNudgeLeftChange={setNudgeLeft}
-          />
+      {/* Main */}
+      <main className="main">
+        <Topbar onLogout={() => setShowStopModal(true)} />
+        <div className="body-grid">
+          <div className="left-col">
+            <StatsCards
+              available={availableCount}
+              inUse={inUseCount}
+              earliestFree={earliestFree}
+            />
+            <MySession session={activeSession} onStop={() => setShowStopModal(true)} />
+            <Overview spots={spots} />
+            <RecentActivity items={activityItems.slice(0, 3)} />
+          </div>
+          <div className="right-col">
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span
+                style={{
+                  fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
+                  letterSpacing: '0.08em', color: 'var(--text-tertiary)',
+                }}
+              >
+                Charging Stations
+              </span>
+              <span
+                style={{
+                  background: 'rgba(34,197,94,0.1)', color: '#16A34A',
+                  border: '1px solid rgba(34,197,94,0.22)',
+                  borderRadius: 99, fontSize: 10, fontWeight: 500, padding: '2px 8px',
+                }}
+              >
+                {availableCount} available
+              </span>
+              <span
+                style={{
+                  background: 'rgba(220,38,38,0.07)', color: '#DC2626',
+                  border: '1px solid rgba(220,38,38,0.18)',
+                  borderRadius: 99, fontSize: 10, fontWeight: 500, padding: '2px 8px',
+                }}
+              >
+                {inUseCount} in use
+              </span>
+            </div>
+
+            {/* Spot list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {availableSpots.map((spot) => (
+                <SpotRow
+                  key={spot.id}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  spot={spot as any}
+                  variant="card"
+                  onOccupy={handleOccupyById}
+                  onReserve={() => handleReserveToggle(spot.id)}
+                  disabled={!!activeSession}
+                  isOwned={!!spot.isCurrentUser}
+                />
+              ))}
+
+              {overtimeSpots.map((spot) => (
+                <OvertimeCard
+                  key={spot.id}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  spot={spot as any}
+                  ctx="collapsed"
+                  variant="card"
+                  onOccupy={handleOccupyById}
+                  onReserve={() => handleReserveToggle(spot.id)}
+                  disabled={!!activeSession}
+                  overlayOpen={overtimeOverlayOpen}
+                  onToggleOverlay={() => setOvertimeOverlayOpen((o) => !o)}
+                  resolved={overtimeResolved}
+                  onResolve={() => setOvertimeResolved(true)}
+                  nudgeLeft={nudgeLeft}
+                  onNudgeLeftChange={setNudgeLeft}
+                />
+              ))}
+
+              {inUseSpots.map((spot) => (
+                <SpotRow
+                  key={spot.id}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  spot={spot as any}
+                  variant="card"
+                  onOccupy={handleOccupyById}
+                  onReserve={() => handleReserveToggle(spot.id)}
+                  isOwned={!!spot.isCurrentUser}
+                />
+              ))}
+            </div>
+          </div>
         </div>
+      </main>
 
-        {/* Full-screen sheet */}
-        <StationSheet
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          onToggleFreePanel={toggleFreePanel}
-          onOccupy={openOccupy}
-          overtimeOverlayOpen={overtimeOverlayOpen}
-          onToggleOvertimeOverlay={toggleOvertimeOverlay}
-          overtimeResolved={overtimeResolved}
-          onOvertimeResolve={resolveOvertime}
-          nudgeLeft={nudgeLeft}
-          onNudgeLeftChange={setNudgeLeft}
-        />
-
-        {/* Bottom nav */}
-        <BottomNav active={activeTab} onSelect={setActiveTab} />
-
-        {/* Earliest free panel */}
-        <EarliestFreePanel
-          open={freePanelOpen}
-          sheetOpen={sheetOpen}
-          onClose={() => setFreePanelOpen(false)}
-        />
-
-        {/* Occupy modal */}
-        <OccupyModal
-          open={occupyOpen}
-          spotId={occupySpotId}
-          onClose={closeOccupy}
-        />
-      </div>
-    </div>
+      {/* Mobile nav */}
+      <MobileNav />
+    </>
   );
 }
