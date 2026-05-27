@@ -23,7 +23,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6"
-      style={{ background: 'linear-gradient(160deg, #E8EAEE 0%, #D8DADF 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #D8DADF 0%, #C8CDD6 100%)' }}
     >
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
