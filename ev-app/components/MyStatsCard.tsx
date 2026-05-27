@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import type { Spot } from '@/lib/types';
 
 interface MyStatsCardProps {
@@ -7,6 +10,22 @@ interface MyStatsCardProps {
 
 export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
   const isActive = activeSpot !== null;
+  const [chargePercent, setChargePercent] = useState(0);
+
+  useEffect(() => {
+    if (!activeSpot?.startMs || !activeSpot?.stopMs) {
+      setChargePercent(0);
+      return;
+    }
+    const calc = () => {
+      const totalMs = activeSpot.stopMs! - activeSpot.startMs!;
+      const elapsedMs = Date.now() - activeSpot.startMs!;
+      setChargePercent(Math.min(100, Math.round((elapsedMs / totalMs) * 100)));
+    };
+    calc();
+    const id = setInterval(calc, 30_000);
+    return () => clearInterval(id);
+  }, [activeSpot?.startMs, activeSpot?.stopMs]);
 
   return (
     <div className="flex-shrink-0">
@@ -89,16 +108,20 @@ export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wide" style={{ color: '#9CA3AF' }}>Consumption</p>
-              <p className="font-semibold text-xs" style={{ color: '#1A1D23' }}>--</p>
+              <p className="font-semibold text-xs" style={{ color: '#1A1D23' }}>
+                {isActive ? activeSpot.consumption : '--'}
+              </p>
             </div>
           </div>
           <div className="glass-inner rounded-xl p-2">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] uppercase tracking-wide" style={{ color: '#9CA3AF' }}>Charge %</p>
-              <span className="font-bold text-xs" style={{ color: '#1A1D23' }}>--%</span>
+              <span className="font-bold text-xs" style={{ color: '#1A1D23' }}>
+                {isActive ? `${chargePercent}%` : '--%'}
+              </span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,0,0,0.07)' }}>
-              <div className="charge-bar h-full rounded-full" style={{ width: '0%' }} />
+              <div className="charge-bar h-full rounded-full" style={{ width: `${chargePercent}%` }} />
             </div>
           </div>
         </div>

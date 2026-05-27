@@ -54,10 +54,12 @@ export default function Home() {
     const now = new Date();
     const end = new Date(now.getTime() + (hours * 60 + minutes) * 60 * 1000);
     const timeToFull = hours > 0 ? `${hours}h ${String(minutes).padStart(2, '0')}m` : `${minutes} min`;
+    const totalHours = (hours * 60 + minutes) / 60;
+    const consumption = (totalHours * 3).toFixed(1) + ' kWh';
     setSpots((prev) =>
       prev.map((spot) =>
         spot.id === spotId
-          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull }
+          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime() }
           : spot
       )
     );

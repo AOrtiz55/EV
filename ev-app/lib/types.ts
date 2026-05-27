@@ -8,6 +8,9 @@ export interface Spot {
   stopTime?: string;
   timeToFull?: string;
   overtimeMinutes?: number;
+  consumption?: string;
+  startMs?: number;
+  stopMs?: number;
 }
 
 export interface NudgeState {
