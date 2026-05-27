@@ -26,6 +26,7 @@ export default function Home() {
 
   const [spots, setSpots] = useState<Spot[]>(SPOTS);
   const hasActiveSession = spots.some((s) => s.occupant === 'You' && s.status === 'in-use');
+  const activeSpot = spots.find((s) => s.occupant === 'You' && s.status === 'in-use') ?? null;
 
   // Occupy modal
   const [occupyOpen, setOccupyOpen] = useState(false);
@@ -57,6 +58,16 @@ export default function Home() {
       prev.map((spot) =>
         spot.id === spotId
           ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull }
+          : spot
+      )
+    );
+  }, []);
+
+  const handleStop = useCallback(() => {
+    setSpots((prev) =>
+      prev.map((spot) =>
+        spot.occupant === 'You' && spot.status === 'in-use'
+          ? { ...spot, status: 'available' as const, occupant: undefined, startTime: undefined, stopTime: undefined, timeToFull: undefined }
           : spot
       )
     );
@@ -135,7 +146,7 @@ export default function Home() {
           className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-28"
           style={{ gap: '12px' }}
         >
-          <MyStatsCard />
+          <MyStatsCard activeSpot={activeSpot} onStop={handleStop} />
 
           <ChargingStationsCard
             spots={spots}
