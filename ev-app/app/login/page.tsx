@@ -44,7 +44,7 @@ export default function LoginPage() {
         className="w-full max-w-sm p-6"
         style={{
           background: '#ffffff',
-          border: '1.5px solid #C4C7CC',
+          border: '1.5px solid #d1d5db',
           borderRadius: '24px',
           boxShadow: 'none',
         }}
