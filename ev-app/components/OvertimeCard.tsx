@@ -270,8 +270,8 @@ export default function OvertimeCard({
               </button>
               <button
                 onClick={() => onOccupy(spot.id)}
-                disabled={disabled}
-                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm${disabled ? ' opacity-40' : ''}`}
+                disabled={disabled && !resolved}
+                className={`flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm${disabled && !resolved ? ' opacity-40' : ''}`}
                 style={{ background: '#1A1D23', color: '#fff' }}
               >
                 ⚡ Occupy
