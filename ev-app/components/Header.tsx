@@ -1,4 +1,22 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Header() {
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState('');
+
+  useEffect(() => {
+    setDisplayName(localStorage.getItem('user_name') ?? '');
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_email');
+    router.push('/login');
+  };
+
   return (
     <div className="relative h-44 flex-shrink-0 overflow-hidden">
       {/* Background gradient */}
@@ -42,12 +60,13 @@ export default function Header() {
             Welcome back
           </p>
           <p className="font-bold text-base tracking-wide" style={{ color: '#1A1D23' }}>
-            Aaron
+            {displayName}
           </p>
         </div>
 
         {/* Logout */}
         <button
+          onClick={handleLogout}
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full glass-inner transition-colors"
           style={{ color: '#6B7280' }}
           onMouseOver={(e) => (e.currentTarget.style.color = '#DC2626')}

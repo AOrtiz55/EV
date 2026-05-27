@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { SPOTS } from '@/lib/data';
 import type { Spot } from '@/lib/types';
 import Header from '@/components/Header';
@@ -20,13 +21,22 @@ function formatTime(date: Date): string {
 }
 
 export default function Home() {
+  const router = useRouter();
+  const [displayName, setDisplayName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('user_name');
+    if (!name) { router.push('/login'); return; }
+    setDisplayName(name);
+  }, [router]);
+
   const [sheetOpen, setSheetOpen] = useState(false);
   const [freePanelOpen, setFreePanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
 
   const [spots, setSpots] = useState<Spot[]>(SPOTS);
-  const hasActiveSession = spots.some((s) => s.occupant === 'You' && s.status === 'in-use');
-  const activeSpot = spots.find((s) => s.occupant === 'You' && s.status === 'in-use') ?? null;
+  const hasActiveSession = spots.some((s) => s.occupant === displayName && s.status === 'in-use');
+  const activeSpot = spots.find((s) => s.occupant === displayName && s.status === 'in-use') ?? null;
 
   // Occupy modal
   const [occupyOpen, setOccupyOpen] = useState(false);
@@ -59,21 +69,21 @@ export default function Home() {
     setSpots((prev) =>
       prev.map((spot) =>
         spot.id === spotId
-          ? { ...spot, status: 'in-use' as const, occupant: 'You', startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime(), startTimeRaw: now, stopTimeRaw: end }
+          ? { ...spot, status: 'in-use' as const, occupant: displayName, startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime(), startTimeRaw: now, stopTimeRaw: end }
           : spot
       )
     );
-  }, []);
+  }, [displayName]);
 
   const handleStop = useCallback(() => {
     setSpots((prev) =>
       prev.map((spot) =>
-        spot.occupant === 'You' && spot.status === 'in-use'
+        spot.occupant === displayName && spot.status === 'in-use'
           ? { ...spot, status: 'available' as const, occupant: undefined, startTime: undefined, stopTime: undefined, timeToFull: undefined }
           : spot
       )
     );
-  }, []);
+  }, [displayName]);
 
   const handleReserve = useCallback(() => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -148,7 +158,7 @@ export default function Home() {
           className="flex-1 flex flex-col overflow-hidden px-4 pt-3 pb-28"
           style={{ gap: '12px' }}
         >
-          <MyStatsCard activeSpot={activeSpot} onStop={handleStop} />
+          <MyStatsCard activeSpot={activeSpot} onStop={handleStop} displayName={displayName} />
 
           <ChargingStationsCard
             spots={spots}
