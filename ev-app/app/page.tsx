@@ -173,6 +173,7 @@ export default function Home() {
             onOvertimeResolve={resolveOvertime}
             nudgeLeft={nudgeLeft}
             onNudgeLeftChange={setNudgeLeft}
+            displayName={displayName}
           />
         </div>
 
@@ -191,6 +192,7 @@ export default function Home() {
           onOvertimeResolve={resolveOvertime}
           nudgeLeft={nudgeLeft}
           onNudgeLeftChange={setNudgeLeft}
+          displayName={displayName}
         />
 
         {/* Bottom nav */}

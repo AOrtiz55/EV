@@ -16,6 +16,7 @@ interface ChargingStationsCardProps {
   onOvertimeResolve: () => void;
   nudgeLeft: number;
   onNudgeLeftChange: (n: number) => void;
+  displayName: string;
 }
 
 export default function ChargingStationsCard({
@@ -31,6 +32,7 @@ export default function ChargingStationsCard({
   onOvertimeResolve,
   nudgeLeft,
   onNudgeLeftChange,
+  displayName,
 }: ChargingStationsCardProps) {
   const available    = spots.filter((s) => s.status === 'available').length;
   const inUse        = spots.filter((s) => s.status === 'in-use').length;
@@ -94,7 +96,7 @@ export default function ChargingStationsCard({
         {/* Spot list */}
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2.5">
           {spots.filter((s) => s.status === 'available').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} isOwned={spot.occupant === 'You'} />
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} disabled={hasActiveSession} isOwned={spot.occupant === displayName} />
           ))}
 
           {overtimeSpot && (
@@ -115,7 +117,7 @@ export default function ChargingStationsCard({
           )}
 
           {spots.filter((s) => s.status === 'in-use').map((spot) => (
-            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} isOwned={spot.occupant === 'You'} />
+            <SpotRow key={spot.id} spot={spot} variant="card" onOccupy={onOccupy} onReserve={onReserve} isOwned={spot.occupant === displayName} />
           ))}
         </div>
       </div>
