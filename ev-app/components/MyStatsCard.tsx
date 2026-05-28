@@ -6,9 +6,10 @@ import type { Spot } from '@/lib/types';
 interface MyStatsCardProps {
   activeSpot: Spot | null;
   onStop: () => void;
+  displayName?: string;
 }
 
-export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
+export default function MyStatsCard({ activeSpot, onStop, displayName }: MyStatsCardProps) {
   const isActive = activeSpot !== null;
   const [chargePercent, setChargePercent] = useState(0);
   const [remain, setRemain] = useState('--');
@@ -67,7 +68,7 @@ export default function MyStatsCard({ activeSpot, onStop }: MyStatsCardProps) {
                 {isActive ? `Spot #${activeSpot.id}` : '—'}
               </p>
               <p className="text-[10px]" style={{ color: '#9CA3AF' }}>
-                {isActive ? 'Your active session' : 'No active session'}
+                {isActive ? (displayName ?? 'Your active session') : 'No active session'}
               </p>
             </div>
           </div>
