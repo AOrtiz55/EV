@@ -1,4 +1,7 @@
-import type { ActiveSession } from '@/lib/data';
+'use client';
+
+import { useState, useEffect } from 'react';
+import type { Spot } from '@/lib/types';
 
 const StopIcon = () => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden>
@@ -8,12 +11,39 @@ const StopIcon = () => (
 );
 
 interface MySessionProps {
-  session: ActiveSession | null;
+  activeSpot: Spot | null;
+  displayName: string;
   onStop: () => void;
 }
 
-export default function MySession({ session, onStop }: MySessionProps) {
-  if (!session) {
+export default function MySession({ activeSpot, displayName, onStop }: MySessionProps) {
+  const isActive = activeSpot !== null;
+  const [chargePercent, setChargePercent] = useState(0);
+  const [remain, setRemain] = useState('--');
+
+  useEffect(() => {
+    if (!activeSpot?.stopTimeRaw || !activeSpot?.startTimeRaw) {
+      setRemain('--');
+      setChargePercent(0);
+      return;
+    }
+    const tick = () => {
+      const now = new Date();
+      const totalMs = activeSpot.stopTimeRaw!.getTime() - activeSpot.startTimeRaw!.getTime();
+      const remainMs = Math.max(0, activeSpot.stopTimeRaw!.getTime() - now.getTime());
+      const elapsedMs = totalMs - remainMs;
+      const remainHrs = Math.floor(remainMs / 3600000);
+      const remainMins = Math.floor((remainMs % 3600000) / 60000);
+      const pct = Math.min(100, Math.round((elapsedMs / totalMs) * 100));
+      setRemain(remainHrs + 'h ' + String(remainMins).padStart(2, '0') + 'm');
+      setChargePercent(pct);
+    };
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, [activeSpot]);
+
+  if (!isActive) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
         <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>No active session</p>
@@ -26,7 +56,7 @@ export default function MySession({ session, onStop }: MySessionProps) {
 
   return (
     <div className="card">
-      {/* Header row: MY STATS + Active badge left, Stop button right */}
+      {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <p className="col-title">MY STATS</p>
@@ -38,20 +68,20 @@ export default function MySession({ session, onStop }: MySessionProps) {
         </button>
       </div>
 
-      {/* Spot name — includes station and level */}
+      {/* Spot identifier */}
       <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-        {session.spotName} — {session.station}, {session.level}
+        Spot #{activeSpot.id}
       </p>
       <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3, marginBottom: 14 }}>
-        Your active session · Started {session.startTime}
+        Your active session · Started {activeSpot.startTime}
       </p>
 
-      {/* Time grid — value above, label below */}
+      {/* Time grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
         {[
-          { label: 'START', value: session.startTime },
-          { label: 'STOP', value: session.stopTime },
-          { label: 'REMAINING', value: `${session.remainingHours} hr` },
+          { label: 'START',     value: activeSpot.startTime ?? '--' },
+          { label: 'STOP',      value: activeSpot.stopTime  ?? '--' },
+          { label: 'REMAINING', value: remain },
         ].map(({ label, value }) => (
           <div
             key={label}
@@ -73,29 +103,22 @@ export default function MySession({ session, onStop }: MySessionProps) {
         ))}
       </div>
 
-      {/* Consumption row */}
+      {/* Consumption + charge % */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <div style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.75)', borderRadius: 8, padding: '9px 12px' }}>
           <p style={{ fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>⚡ Consumption</p>
           <p style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--mono)' }}>
-            {session.consumptionKwh} kWh
+            {activeSpot.consumption ?? '--'}
           </p>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(255,255,255,0.75)', borderRadius: 8, padding: '9px 12px' }}>
           <p style={{ fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 3 }}>Charge %</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ flex: 1, height: 5, background: 'rgba(0,0,0,0.08)', borderRadius: 99 }}>
-              <div
-                style={{
-                  width: `${session.chargePercent}%`,
-                  height: '100%',
-                  background: '#1A1D23',
-                  borderRadius: 99,
-                }}
-              />
+              <div className="charge-bar" style={{ width: `${chargePercent}%`, height: '100%', borderRadius: 99 }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--mono)', flexShrink: 0 }}>
-              {session.chargePercent}%
+              {chargePercent}%
             </span>
           </div>
         </div>

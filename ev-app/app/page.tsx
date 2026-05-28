@@ -1,223 +1,211 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { initialSpots, initialSession, activityItems } from '@/lib/data';
-import type { Spot, ActiveSession } from '@/lib/data';
+import { useState, useCallback, useRef } from 'react';
+import { SPOTS } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 
 import Sidebar from '@/components/Sidebar';
 import MobileNav from '@/components/MobileNav';
 import Topbar from '@/components/Topbar';
 import StatsCards from '@/components/StatsCards';
-import MySession from '@/components/MySession';
+import MyStatsCard from '@/components/MyStatsCard';
 import Overview from '@/components/Overview';
 import RecentActivity from '@/components/RecentActivity';
-import SpotRow from '@/components/SpotRow';
-import OvertimeCard from '@/components/OvertimeCard';
+import ChargingStationsCard from '@/components/ChargingStationsCard';
 import OccupyModal from '@/components/OccupyModal';
 import StopModal from '@/components/StopModal';
+import StationSheet from '@/components/StationSheet';
+import EarliestFreePanel from '@/components/EarliestFreePanel';
+
+interface ActivityItem {
+  id: number; type: 'available' | 'occupied' | 'session-ended' | 'overtime';
+  spotName: string; description: string; time: string;
+}
+
+const activityItems: ActivityItem[] = [
+  { id: 1, type: 'overtime',      spotName: 'Spot #2', description: 'is in overtime — 8 min over', time: '11:44 AM' },
+  { id: 2, type: 'available',     spotName: 'Spot #9', description: 'now available',               time: '10:30 AM' },
+  { id: 3, type: 'session-ended', spotName: 'Spot #7', description: 'session ended',               time: '10:30 AM' },
+  { id: 4, type: 'occupied',      spotName: 'Spot #1', description: 'occupied by you',             time: '8:00 AM'  },
+  { id: 5, type: 'available',     spotName: 'Spot #2', description: 'now in use',                  time: '7:55 AM'  },
+];
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
 
 export default function Home() {
-  const [spots, setSpots] = useState<Spot[]>(initialSpots);
-  const [activeSession, setActiveSession] = useState<ActiveSession | null>(initialSession);
-  const [occupySpotId, setOccupySpotId] = useState<number | null>(null);
-  const [showStopModal, setShowStopModal] = useState(false);
-  const [reservedSpots, setReservedSpots] = useState<Set<number>>(new Set());
-  const [toast, setToast] = useState<string | null>(null);
+  const [displayName] = useState('Aaron');
 
-  // Overtime lifted state
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [freePanelOpen, setFreePanelOpen] = useState(false);
+
+  const [spots, setSpots] = useState<Spot[]>(SPOTS);
+  const hasActiveSession = spots.some((s) => s.occupant === displayName && s.status === 'in-use');
+  const activeSpot = spots.find((s) => s.occupant === displayName && s.status === 'in-use') ?? null;
+
+  // Occupy modal
+  const [occupyOpen, setOccupyOpen] = useState(false);
+  const [occupySpotId, setOccupySpotId] = useState<number | null>(null);
+
+  // Overtime shared state
   const [overtimeOverlayOpen, setOvertimeOverlayOpen] = useState(false);
   const [overtimeResolved, setOvertimeResolved] = useState(false);
   const [nudgeLeft, setNudgeLeft] = useState(3);
 
-  // Derived state
-  const availableCount = spots.filter((s) => s.status === 'available').length;
-  const inUseCount = spots.filter((s) => s.status === 'in-use' || s.status === 'overtime').length;
-  const earliestFree = spots
-    .filter((s) => s.minutesRemaining != null)
-    .sort((a, b) => (a.minutesRemaining ?? 999) - (b.minutesRemaining ?? 999))[0];
+  // Toast
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showToast = useCallback((message: string) => {
-    setToast(message);
-  }, []);
+  // Desktop-only: stop confirmation modal
+  const [showStopModal, setShowStopModal] = useState(false);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  const handleOccupyById = useCallback((spotId: number) => {
+  const openOccupy = useCallback((spotId: number) => {
     setOccupySpotId(spotId);
+    setOccupyOpen(true);
   }, []);
 
-  const handleOccupyConfirm = useCallback((spotId: number, hours: number, minutes: number) => {
-    const totalMinutes = hours * 60 + minutes;
+  const closeOccupy = useCallback(() => {
+    setOccupyOpen(false);
+  }, []);
+
+  const handleConfirmOccupy = useCallback((spotId: number, hours: number, minutes: number) => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + totalMinutes);
-    const occupiedUntil = now.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
+    const end = new Date(now.getTime() + (hours * 60 + minutes) * 60 * 1000);
+    const timeToFull = hours > 0 ? `${hours}h ${String(minutes).padStart(2, '0')}m` : `${minutes} min`;
+    const totalHours = (hours * 60 + minutes) / 60;
+    const consumption = (totalHours * 3).toFixed(1) + ' kWh';
+    setSpots((prev) => {
+      if (prev.find((s) => s.id === spotId)?.status === 'overtime') {
+        setOvertimeOverlayOpen(false);
+      }
+      return prev.map((spot) =>
+        spot.id === spotId
+          ? { ...spot, status: 'in-use' as const, occupant: displayName, startTime: formatTime(now), stopTime: formatTime(end), timeToFull, consumption, startMs: now.getTime(), stopMs: end.getTime(), startTimeRaw: now, stopTimeRaw: end }
+          : spot
+      );
     });
+  }, [displayName]);
 
+  const handleStop = useCallback(() => {
     setSpots((prev) =>
-      prev.map((s) =>
-        s.id === spotId
-          ? { ...s, status: 'in-use', occupiedUntil, minutesRemaining: totalMinutes }
-          : s
-      )
-    );
-    setOccupySpotId(null);
-  }, []);
-
-  const handleStopConfirm = useCallback(() => {
-    setActiveSession(null);
-    setSpots((prev) =>
-      prev.map((s) =>
-        s.id === 1
-          ? { ...s, status: 'available', minutesRemaining: undefined, occupiedUntil: undefined, isCurrentUser: false }
-          : s
+      prev.map((spot) =>
+        spot.occupant === displayName && spot.status === 'in-use'
+          ? { ...spot, status: 'available' as const, occupant: undefined, startTime: undefined, stopTime: undefined, timeToFull: undefined }
+          : spot
       )
     );
     setShowStopModal(false);
+  }, [displayName]);
+
+  const handleReserve = useCallback(() => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastVisible(true);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 2000);
   }, []);
 
-  const handleReserveToggle = useCallback((spotId: number) => {
-    setReservedSpots((prev) => {
-      const next = new Set(prev);
-      if (next.has(spotId)) {
-        next.delete(spotId);
-      } else {
-        next.add(spotId);
-      }
-      return next;
-    });
-    showToast(`Spot #${spotId} ${reservedSpots.has(spotId) ? 'unreserved' : 'reserved'}`);
-  }, [reservedSpots, showToast]);
+  const toggleFreePanel = useCallback(() => {
+    setFreePanelOpen((v) => !v);
+  }, []);
 
-  const availableSpots = spots.filter((s) => s.status === 'available');
-  const overtimeSpots  = spots.filter((s) => s.status === 'overtime');
-  const inUseSpots     = spots.filter((s) => s.status === 'in-use');
+  const toggleOvertimeOverlay = useCallback(() => {
+    if (overtimeResolved) return;
+    setOvertimeOverlayOpen((v) => !v);
+  }, [overtimeResolved]);
+
+  const resolveOvertime = useCallback(() => {
+    setOvertimeResolved(true);
+    setOvertimeOverlayOpen(false);
+    setSpots((prev) =>
+      prev.map((spot) =>
+        spot.status === 'overtime'
+          ? { ...spot, status: 'available' as const, occupant: undefined, startTime: undefined, overtimeMinutes: undefined }
+          : spot
+      )
+    );
+  }, []);
 
   return (
     <>
-      {/* Modals — outside layout flow */}
+      {/* Fixed overlay layer — z-200 so it sits above sidebar (z-100) and all content.
+          pointer-events:none on the wrapper lets the layout beneath receive events;
+          children with pointer-events:auto/all (buttons, backdrop) still fire normally. */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none', overflow: 'hidden' }}>
+        <EarliestFreePanel
+          open={freePanelOpen}
+          sheetOpen={sheetOpen}
+          onClose={() => setFreePanelOpen(false)}
+          onReserve={handleReserve}
+        />
+      </div>
+
+      {/* Modals */}
       <OccupyModal
-        open={occupySpotId !== null}
+        open={occupyOpen}
         spotId={occupySpotId}
-        onConfirm={handleOccupyConfirm}
-        onClose={() => setOccupySpotId(null)}
+        onConfirm={handleConfirmOccupy}
+        onClose={closeOccupy}
       />
       {showStopModal && (
         <StopModal
-          session={activeSession}
-          onConfirm={handleStopConfirm}
+          activeSpot={activeSpot}
+          onConfirm={handleStop}
           onClose={() => setShowStopModal(false)}
         />
       )}
 
       {/* Toast */}
-      {toast && <div className="toast">{toast}</div>}
+      <div className={`toast ${toastVisible ? 'toast-visible' : 'toast-hidden'}`}>
+        Reserve — coming soon
+      </div>
 
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main */}
       <main className="main">
         <Topbar onLogout={() => setShowStopModal(true)} />
         <div className="body-grid">
           <div className="left-col">
-            <StatsCards
-              available={availableCount}
-              inUse={inUseCount}
-              earliestFree={earliestFree}
-            />
-            <MySession session={activeSession} onStop={() => setShowStopModal(true)} />
+            <StatsCards spots={spots} />
+            <MyStatsCard activeSpot={activeSpot} displayName={displayName} onStop={() => setShowStopModal(true)} />
             <Overview spots={spots} />
             <RecentActivity items={activityItems.slice(0, 3)} />
           </div>
           <div className="right-col">
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span
-                style={{
-                  fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
-                  letterSpacing: '0.08em', color: 'var(--text-tertiary)',
-                }}
-              >
-                Charging Stations
-              </span>
-              <span
-                style={{
-                  background: 'rgba(34,197,94,0.1)', color: '#16A34A',
-                  border: '1px solid rgba(34,197,94,0.22)',
-                  borderRadius: 99, fontSize: 10, fontWeight: 500, padding: '2px 8px',
-                }}
-              >
-                {availableCount} available
-              </span>
-              <span
-                style={{
-                  background: 'rgba(220,38,38,0.07)', color: '#DC2626',
-                  border: '1px solid rgba(220,38,38,0.18)',
-                  borderRadius: 99, fontSize: 10, fontWeight: 500, padding: '2px 8px',
-                }}
-              >
-                {inUseCount} in use
-              </span>
-            </div>
-
-            {/* Spot list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {availableSpots.map((spot) => (
-                <SpotRow
-                  key={spot.id}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  spot={spot as any}
-                  variant="card"
-                  onOccupy={handleOccupyById}
-                  onReserve={() => handleReserveToggle(spot.id)}
-                  disabled={!!activeSession}
-                  isOwned={!!spot.isCurrentUser}
-                />
-              ))}
-
-              {overtimeSpots.map((spot) => (
-                <OvertimeCard
-                  key={spot.id}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  spot={spot as any}
-                  ctx="collapsed"
-                  variant="card"
-                  onOccupy={handleOccupyById}
-                  onReserve={() => handleReserveToggle(spot.id)}
-                  disabled={!!activeSession}
-                  overlayOpen={overtimeOverlayOpen}
-                  onToggleOverlay={() => setOvertimeOverlayOpen((o) => !o)}
-                  resolved={overtimeResolved}
-                  onResolve={() => setOvertimeResolved(true)}
-                  nudgeLeft={nudgeLeft}
-                  onNudgeLeftChange={setNudgeLeft}
-                />
-              ))}
-
-              {inUseSpots.map((spot) => (
-                <SpotRow
-                  key={spot.id}
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  spot={spot as any}
-                  variant="card"
-                  onOccupy={handleOccupyById}
-                  onReserve={() => handleReserveToggle(spot.id)}
-                  isOwned={!!spot.isCurrentUser}
-                />
-              ))}
-            </div>
+            <ChargingStationsCard
+              spots={spots}
+              hasActiveSession={hasActiveSession}
+              onOpenSheet={() => setSheetOpen(true)}
+              onToggleFreePanel={toggleFreePanel}
+              onOccupy={openOccupy}
+              onReserve={handleReserve}
+              overtimeOverlayOpen={overtimeOverlayOpen}
+              onToggleOvertimeOverlay={toggleOvertimeOverlay}
+              overtimeResolved={overtimeResolved}
+              onOvertimeResolve={resolveOvertime}
+              nudgeLeft={nudgeLeft}
+              onNudgeLeftChange={setNudgeLeft}
+              displayName={displayName}
+            />
+            <StationSheet
+              spots={spots}
+              hasActiveSession={hasActiveSession}
+              open={sheetOpen}
+              onClose={() => setSheetOpen(false)}
+              onToggleFreePanel={toggleFreePanel}
+              onOccupy={openOccupy}
+              onReserve={handleReserve}
+              overtimeOverlayOpen={overtimeOverlayOpen}
+              onToggleOvertimeOverlay={toggleOvertimeOverlay}
+              overtimeResolved={overtimeResolved}
+              onOvertimeResolve={resolveOvertime}
+              nudgeLeft={nudgeLeft}
+              onNudgeLeftChange={setNudgeLeft}
+              displayName={displayName}
+            />
           </div>
         </div>
       </main>
 
-      {/* Mobile nav */}
       <MobileNav />
     </>
   );

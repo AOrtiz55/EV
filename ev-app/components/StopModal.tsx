@@ -1,7 +1,7 @@
-import type { ActiveSession } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 
 interface StopModalProps {
-  session: ActiveSession | null;
+  activeSpot: Spot | null;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -12,8 +12,8 @@ const CloseIcon = () => (
   </svg>
 );
 
-export default function StopModal({ session, onConfirm, onClose }: StopModalProps) {
-  if (!session) return null;
+export default function StopModal({ activeSpot, onConfirm, onClose }: StopModalProps) {
+  if (!activeSpot) return null;
 
   return (
     <>
@@ -77,24 +77,16 @@ export default function StopModal({ session, onConfirm, onClose }: StopModalProp
         {/* Body */}
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 22 }}>
           This will end your active session on{' '}
-          <strong style={{ color: 'var(--text-primary)' }}>{session.spotName}</strong>. The spot
+          <strong style={{ color: 'var(--text-primary)' }}>Spot #{activeSpot.id}</strong>. The spot
           will become available immediately.
         </p>
 
         {/* Buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <button
-            className="btn btn-outline"
-            onClick={onClose}
-            style={{ padding: '12px', fontSize: 13 }}
-          >
+          <button className="btn btn-outline" onClick={onClose} style={{ padding: '12px', fontSize: 13 }}>
             Keep charging
           </button>
-          <button
-            className="btn btn-red"
-            onClick={onConfirm}
-            style={{ padding: '12px', fontSize: 13 }}
-          >
+          <button className="btn btn-red" onClick={onConfirm} style={{ padding: '12px', fontSize: 13 }}>
             Yes, stop session
           </button>
         </div>

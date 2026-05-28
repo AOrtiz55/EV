@@ -1,4 +1,4 @@
-import type { Spot } from '@/lib/data';
+import type { Spot } from '@/lib/types';
 
 interface OverviewProps {
   spots: Spot[];
@@ -10,7 +10,7 @@ export default function Overview({ spots }: OverviewProps) {
 
   const overtimeSpots = spots.filter((s) => s.status === 'overtime');
   const freeSoonSpots = spots.filter(
-    (s) => s.status === 'in-use' && s.minutesRemaining != null && s.minutesRemaining <= 15
+    (s) => s.status === 'in-use' && s.timeToFull != null && parseInt(s.timeToFull) <= 15
   );
 
   return (
@@ -81,7 +81,7 @@ export default function Overview({ spots }: OverviewProps) {
                   }}
                 />
                 <span style={{ fontSize: 12, color: 'var(--amber)', fontWeight: 500 }}>
-                  {s.name} is in overtime · {s.overtimeMinutes} min over
+                  {`Spot #${s.id}`} is in overtime · {s.overtimeMinutes} min over
                 </span>
               </div>
             ))}
@@ -107,7 +107,7 @@ export default function Overview({ spots }: OverviewProps) {
                   }}
                 />
                 <span style={{ fontSize: 12, color: 'var(--green-text)', fontWeight: 500 }}>
-                  {s.name} frees up in {s.minutesRemaining} min
+                  {`Spot #${s.id}`} frees up in {s.timeToFull}
                 </span>
               </div>
             ))}
